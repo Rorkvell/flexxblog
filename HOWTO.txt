@@ -1,0 +1,62 @@
+HOWTO flexxblog
+
+Introduction:
+Flexxblog is based on rss and xsl. Currently, this is a development version, so it does not have any installer or setup routine.
+
+Start:
+First create some directories on your webspace:
+
+	X
+	+-- admin
+	+-- 2012
+
+X is some directory on your webspace. Name or location are not relevant. This will be the starting point for the blog. Under X create a directory named admin. Ths directory should be password protected, since here everything will be put in what should be reserved to the blog owner or authorized people. Last there should be a directory with the name of the current year. This will soon be created automatically, but for now this has to be created manually.
+
+Install:
+Copy the files from the repositories into X and X/admin. 
+
+Configure:
+In X/admin there is a file named template.rss. This is where most of the blogs configuration is stored. Here is an example:
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE rss>
+<rss version="2.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.0/">
+	<channel>
+		<title>Neues aus Rorkvell</title>
+		<link>http://www.rorkvell.de/news/</link>
+		<description>
+			Das ganz normale Chaos, täglich frisch auf den Tisch. Direkt aus der hintersten Provinz in die Metropolen von Groß-Blogistan.
+		</description>
+		<language>de</language>
+		<copyright>http://creativecommons.org/licenses/by/3.0/de/</copyright>
+		<managingEditor>siegfried@rorkvell.de (Siegfried Gipp)</managingEditor>
+		<webMaster>siegfried@rorkvell.de (Siegfried Gipp)</webMaster>
+		<docs>http://blogs.law.harvard.edu/tech/rss</docs>
+		<image>
+			<url>http://www.rorkvell.de/logos/Unicorn3.png</url>
+			<title>Neues aus Rorkvell</title>
+			<link>http://www.rorkvell.de/news/</link>
+		</image>
+	</channel>
+</rss>
+
+You see a title here, that's your blog's title. For newly created articles this is the base for creating the file name. 
+
+The link element points to the directory where your base feed resides. This will be changed to hold teh full file name of the base feed! In the created rss files this element holds the full name of the html representation of this feed. The name of the htl representation may be used in the xsl stylesheet, f.ex. as the target file name.
+
+The description is a short text which will be placed on top of your main (overview) feed.
+
+The language may be placed as lang attribute in the resulting html, and currently it is also added to the files created to allow content negotiation. This behaviour will be made configurable in the future.
+
+The copyright element should hold your license. This may be placed in a html meta element and somewhere on the page.
+
+The elements managingEditor and webMaster are holding their respective information and may be placed too in the html web pager.
+
+The image element may be placed on the html page as well. I'm currently using it for the blog logo.
+
+2 more elements are dynamically added to the feed. Similar to link, there is an element dc:identifier, which holds the full name of the rss file itself. May be used in the stylesheet as source identifier, and may be used as contents of the <link rel=alternate...> element in the html file to refere to the rss feed.
+
+Last there is a dc:creator element which holds the name of the author. This element may have an xlink:href attribute to refere to the authors page. For this purpose there is a php file "users.php" which contains an assiziative array of users (authors) and their names and urls. This should correspond to your configured users.
+
+Last:
+Last steps are: Creating your own rss2html.xsl to build your own html representation of the rss files, and any css files you may need. Which css classes and identifiers just depends on your own xsl stylesheet.
