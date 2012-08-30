@@ -15,3 +15,6 @@ Next major step will be pingback.
 
 Other features planned (i might need help): Comment spam protection, The possibility to edit articles, maybe comments too, delete comments, and a category system based upon a knowledge representatin system like owl.
 
+Siegfried Gipp
+siegfried@rorkvell.de
+http://www.rorkvell.de
