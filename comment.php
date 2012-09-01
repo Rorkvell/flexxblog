@@ -68,7 +68,9 @@ if (file_exists(newCommentsFeed)) {
 		else $meta['link'] = $htmlDst;
 		$cdoc->insertItem(null, $meta, null, null, null);
 		$cdoc->crop(10);
-		$cdoc->save(newCommentsFeed, LIBXML_COMPACT | LIBXML_NOBLANKS); 
+		$cdoc->save(newCommentsFeed, LIBXML_COMPACT | LIBXML_NOBLANKS);
+		$hName = substr(newCommentsFeed, 0, -4) . '.html.de';
+		$cdoc->saveHTMLFile($hName, LIBXML_COMPACT | LIBXML_NOBLANKS); 
 	} else error_log('No title found in article', 0);
 } else error_log(newCommentsFeed . ' not found', 0);
 
