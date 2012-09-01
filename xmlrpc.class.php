@@ -13,7 +13,17 @@ class xmlrpcDocument extends DOMDocument {
 	public function __construct() {
 		parent::__construct('1.0', 'UTF-8');
 		$this->formatOutput = true;
-		//$this->appendChild($this->createElement('methodCall'));
+	}
+	
+	/*
+	 * Loads the document either from given file, or, if no file is given,
+	 * from php://input, which is the raw post data.
+	 */
+	public function load($file = null, $options = null) {
+		if (isset($file)) return parent::load($file, $options);
+		$xml = file_get_contents('php://input');
+		//print $xml;
+		return parent::load('php://input', $options);
 	}
 	
 	public function createParam($p) {
@@ -37,8 +47,8 @@ class xmlrpcDocument extends DOMDocument {
 	 * @param string $method name of method
 	 * @param $p A single parameter or a simple array of parameters for method
 	 */	
-	public function build($method, $p) {
-		//print_r($params);
+	public function buildRequest($method, $p) {
+		if (isset($this->documentElement)) return false;
 		$this->appendChild($this->createElement('methodCall'));
 		$method = $this->documentElement->appendChild($this->createElement('methodName', $method));
 		if (isset($p)) {
@@ -53,6 +63,7 @@ class xmlrpcDocument extends DOMDocument {
 		}
 		return $this;
 	}
+
 
 /*
  <methodResponse>
@@ -80,6 +91,7 @@ class xmlrpcDocument extends DOMDocument {
 	 * @param string $errString
 	 */
 	public function errorResponse($errCode, $errString) {
+		if (isset($this->documentElement)) return false;
 		$this->appendChild($this->createElement('methodResponse'));
 		$response = $this->documentElement->appendChild($this->createElement('fault'));
 		$v1 = $response->appendChild($this->createElement('value'));
@@ -95,18 +107,66 @@ class xmlrpcDocument extends DOMDocument {
 		return $this;		
 	}
  
+/*
+<?xml version="1.0"?>
+<methodCall>
+	<methodName>pingback.ping</methodName>
+		<params>
+			<param>
+				<value><string>http://www.rorkvell.de/news/2012/Ohne_Worte</string></value>
+			</param>
+			<param>
+				<value><string>https://netzpolitik.org/2012/einfach-mal-die-kommentare-schliesen/</string></value>
+			</param>
+		</params>
+</methodCall>
+*/
+	public function methodCall() {
+		$mnlst = $this->getElementsByTagName('methodName');
+		if (!isset($mnlst)) return false;
+		if ($mnlst->length < 1) return false;
+		$mname = $mnlst->item(0);
+		if (!isset($mname)) return false;
+		if (empty($mname->nodeValue)) return false;
+		list($class, $method) = explode('.', $mname->nodeValue, 2);
+		if (!isset($method)) {		// simple function
+			// TODO
+		} else {					// class and method
+			$fname = $class . '.class.php';
+			if (file_exists($fname)) {
+				include_once($fname);
+				if (class_exists($class)) {
+					$f = new $class();
+					$params = $this->getElementsByTagName('param');
+					$p = Array();
+					for ($i=0; $i<$params->length; $i++) {
+						if ($params->item($i)->hasChildNodes()) {
+							$v = $params->item($i)->firstChild;
+							while (isset($v) && $v->nodeName != 'value') {
+								$v = $v->nextSibling;
+							}
+							if (isset($v) && $v->hasChildNodes()) {
+								$type = $v->firstChild;
+								while (isset($type) && $type->nodeType != XML_ELEMENT_NODE) {
+									$type = $type->nextSibling;
+								}
+								if (isset($type)) {
+									$p[] = $type->nodeValue;
+								}
+							}
+						}
+					}
+					return $f->$method($p);
+				}
+
+			} else return $this->errorResponse(0, $fname . ' not found');
+		}
+		return $this->errorResponse(0, 'dummy');
+	}
 	
 
 }
 
 
-/*****************************************************/
-
-//$doc = new xmlrpcDocument();
-//$doc->build('pingback.ping', Array('http://www.rorkvell.de/news/2012/Ohne_Worte', 'https://netzpolitik.org/2012/einfach-mal-die-kommentare-schliesen/'));
-//$doc->errorResponse(33, 'not implemented');
-
-
-//print $doc->saveXML();
 
 ?>

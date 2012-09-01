@@ -45,10 +45,6 @@ function saveCommentRss($doc) {
 			$rssDst = $rssBase . '_' . $i;
 		}
 	}
-	if (DEBUG) {
-		print 'saving to ' . $rssDst . "\n";
-		print $doc->saveXML();
-	}
 	$rc = $doc->save($rssDst);
 	if ($rc === false) die("Error: Could not write " . $rssDst . "\n");
 	$rc = chmod($rssDst, 0640);
@@ -59,10 +55,6 @@ function saveCommentRss($doc) {
 function saveCommentHtml($doc, $rssDst, $lang) {
 	$htmlDst = substr($rssDst, 0, -4) . '.html';
 	if (isset($lang) && !empty($lang)) $htmlDst .= '.' . $lang;
-	if (DEBUG) {
-		print 'saving html to ' . $htmlDst . "\n";
-		print $doc->saveHTML();
-	}
 	$rc = $doc->saveHTMLFile($htmlDst);
 	if ($rc === false) die("Error: Could not write " . $htmlDst . "\n");
 	$rc = chmod($htmlDst, 0640);
@@ -111,12 +103,9 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 
 	$channel = $doc->getChannel();
 	if (!isset($channel)) die("Error: Channel not found");
-	//print $channel->nodeName . "\n";
 	$guid = $channel->getAttribute('xml:id');
-	//print $guid . "\n";
 	updateMainFeed($baseFeed, $link->nodeValue, $lang, $guid, $_POST['title'], $text);	
 	
-
 	header('Location: ' . $link->nodeValue);	
 	
 	

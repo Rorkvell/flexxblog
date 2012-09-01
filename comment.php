@@ -51,19 +51,26 @@ $htmlDst = $link->nodeValue;	// Full URL of just created html feed
 
 if (file_exists(newCommentsFeed)) {
 	$cdoc = new rssDocument();
-	if (!isset($cdoc)) break;
-	$cdoc->load(newCommentsFeed, LIBXML_COMPACT | LIBXML_NOBLANKS);
+	if (!isset($cdoc)) {
+		error_log('Could not create ' . newCommentsFeed);
+		break;
+	}
+	$rc = $cdoc->load(newCommentsFeed, LIBXML_COMPACT | LIBXML_NOBLANKS);
+	if ($rc == false) {
+		error_log('Could not load ' . newCommentsFeed, 0);
+		break;
+	}
 	$meta = Array();
 	$title = $rssDoc->getChannelElement('title');
 	if (isset($title)) {
 		$meta['title'] = $_POST['name'] . ' zu ' . $title->nodeValue;
 		if (isset($itemId)) $meta['link'] = $htmlDst . '#' . $itemId;
 		else $meta['link'] = $htmlDst;
-		$cdoc->appendItem(null, $meta, null, null, null);
+		$cdoc->insertItem(null, $meta, null, null, null);
 		$cdoc->crop(10);
 		$cdoc->save(newCommentsFeed, LIBXML_COMPACT | LIBXML_NOBLANKS); 
-	}
-}
+	} else error_log('No title found in article', 0);
+} else error_log(newCommentsFeed . ' not found', 0);
 
 
 // Redirect to just created html file

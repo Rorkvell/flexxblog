@@ -123,7 +123,7 @@ class rssDocument extends xmlDocument{
 		return parent::saveXML($node, $options);
 	}
 	
-	public function save($filename, $options) {
+	public function save($filename, $options=null) {
 		if (!isset($this->channel)) die("rssDocument::saveXML():Channel not found");
 		$now = time();
 		$nowRss = date(DATE_RSS, $now);
@@ -161,7 +161,7 @@ class rssDocument extends xmlDocument{
 			if (isset($tags)) {
 				$item->appendChild($this->createElement('description', Markdown(strip_tags($text, $tags))));
 			} else {
-				$item->appendChild($this->createElement('description', Markdown(strip_tags($text, $allowable_tags))));
+				$item->appendChild($this->createElement('description', Markdown(strip_tags($text, $this->allowable_tags))));
 			}
 		}
 		if (isset($meta)) {

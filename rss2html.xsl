@@ -175,8 +175,8 @@
 	</xsl:choose>
 </xsl:template>
 
-<xsl:template match="managingEditor" mode="HEAD">
-	<xsl:choose>
+<xsl:template match="managingEditor" mode="HEAD">	<!-- moved to dc:creator element -->
+<!--	<xsl:choose>
 		<xsl:when test="starts-with(., 'http://')">
 			<xsl:element name="link">
 				<xsl:attribute name="rel"><xsl:text>DC.creator</xsl:text></xsl:attribute>
@@ -189,7 +189,7 @@
 				<xsl:attribute name="content"><xsl:value-of select="."/></xsl:attribute>
 			</xsl:element>
 		</xsl:otherwise>
-	</xsl:choose>
+	</xsl:choose> -->
 </xsl:template>
 
 <xsl:template match="item" mode="HEAD">
@@ -251,6 +251,28 @@
 		</xsl:attribute>
 	</xsl:element>
 </xsl:template>
+
+<xsl:template match="dc:creator" mode="HEAD">
+	<xsl:if test="./@xlink:href">
+		<xsl:element name="link">
+			<xsl:attribute name="rel">
+				<xsl:text>author</xsl:text>
+			</xsl:attribute>
+			<xsl:attribute name="href">
+				<xsl:value-of select="./@xlink:href"/>
+			</xsl:attribute>
+		</xsl:element>
+	</xsl:if>
+	<xsl:element name="meta">
+		<xsl:attribute name="name">
+			<xsl:text>author</xsl:text>
+		</xsl:attribute>
+		<xsl:attribute name="content">
+			<xsl:value-of select="."/>
+		</xsl:attribute>
+	</xsl:element>
+</xsl:template>
+
 
 <xsl:template match="image|webMaster|docs" mode="HEAD"/>
 
