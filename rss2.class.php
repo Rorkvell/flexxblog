@@ -8,7 +8,7 @@ define('version', '0.0.1dev');
 class rssDocument extends xmlDocument{
 
 	public $channel = null;
-	private $allowable_tags = "<abbr><p><q><cite><blockquote><strong><em><dfn>";
+	private $allowable_tags = "<abbr><p><q><cite><blockquote><strong><em><dfn><code>";
 	
 	function __construct($version = '1.0', $enc = 'UTF-8') {
 		parent::__construct($version, $enc);

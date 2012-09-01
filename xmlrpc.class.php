@@ -37,7 +37,15 @@ class xmlrpcDocument extends DOMDocument {
 		$value = $param->appendChild($this->createElement('value'));
 		$s = serialize($p);
 		$parts = explode(':', $s);
-		$value->appendChild($this->createElement($types[$parts[0]], $parts[count($parts)-1]));
+		$v = $parts[count($parts)-1];
+		switch($parts[0]) {
+			case 's':
+				$v = substr($parts[2], 1, $parts[1]);
+				break;
+			default:
+				$v = $parts[1];
+		}
+		$value->appendChild($this->createElement($types[$parts[0]], $v));
 		return $param;		
 	}
 	
@@ -61,6 +69,14 @@ class xmlrpcDocument extends DOMDocument {
 				$params->appendChild($this->createParam($p));
 			}
 		}
+		return $this;
+	}
+	
+	public function buildResponse($str) {
+		if (isset($this->documentElement)) return false;
+		$this->appendChild($this->createElement('methodResponse'));
+		$params = $this->documentElement->appendChild($this->createElement('params'));
+		$params->appendChild($this->createParam($str));
 		return $this;
 	}
 
