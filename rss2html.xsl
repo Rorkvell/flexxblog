@@ -354,6 +354,9 @@
 			
 <xsl:template match="dc:creator" mode="BODY">
 	<xsl:element name="p">
+		<xsl:attribute name="class">
+			<xsl:text>vcard fn</xsl:text>
+		</xsl:attribute>
 		<xsl:choose>
 			<xsl:when test="./@xlink:href">
 				<xsl:element name="a">
