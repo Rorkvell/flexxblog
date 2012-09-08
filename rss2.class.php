@@ -9,6 +9,7 @@ class rssDocument extends xmlDocument{
 
 	public $channel = null;
 	private $allowable_tags = "<abbr><p><q><cite><blockquote><strong><em><dfn><code>";
+	private $logFile = 'rssDocument.log';
 	
 	function __construct($version = '1.0', $enc = 'UTF-8') {
 		parent::__construct($version, $enc);
@@ -57,11 +58,13 @@ class rssDocument extends xmlDocument{
 		$link = $this->getChannelElement('link');
 		if (!isset($link)) die("Error: link element not found");
 		$fname = str_replace(' ', '_', $title->nodeValue);
+		//error_log('rss2Document::setId: fname = ' . $fname . "\n", 3, $this->logFile);
 		$l = $link->nodeValue;
 		if ($l[strlen($l)-1] != '/') $l .= '/';
+		//error_log('rss2Document::setId: link->nodeValue = ' . $l . "\n", 3, $this->logFile);
 		$now = getdate();
 		$l .= $now['year'] . '/' . $fname;
-		$this->setElement('link', $l . '.html');
+		$link->parentNode->replaceChild($this->createElement('link', $l . '.html.de'), $link);
 		return $this->channel->appendChild(
 			$this->createElementNS('http://purl.org/dc/elements/1.0/', 'dc:identifier', $l . '.rss')
 		)->nodeValue;
@@ -166,6 +169,7 @@ class rssDocument extends xmlDocument{
 		}
 		if (isset($meta)) {
 			foreach ($meta as $key => $val) {
+				//error_log('rssDocument::createItem meta[' . $key . '] = ' . $val . "\n", 3, $this->logFile);
 				switch ($key) {
 					case 'source':
 						if (is_array($val)) {

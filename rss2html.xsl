@@ -196,6 +196,16 @@
 	<xsl:apply-templates select="guid" mode="HEAD"/>
 </xsl:template>
 
+<xsl:template match="link" mode="HEAD">
+	<xsl:element name="link">
+		<xsl:attribute name="rel">
+			<xsl:text>dc:identifier</xsl:text>
+		</xsl:attribute>
+		<xsl:attribute name="href">
+			<xsl:value-of select="."/>
+		</xsl:attribute>
+	</xsl:element>
+</xsl:template>
 
 <!--  DCTERMS see http://dublincore.org/documents/dc-html/ -->
 <xsl:template match="pubDate" mode="HEAD">
@@ -426,6 +436,14 @@
 				<xsl:element name="a">
 					<xsl:attribute name="href">
 						<xsl:value-of select="./@xlink:href"/>
+					</xsl:attribute>
+					<xsl:value-of select="."/>
+				</xsl:element>
+			</xsl:when>
+			<xsl:when test="../source">
+				<xsl:element name="a">
+					<xsl:attribute name="href">
+						<xsl:value-of select="../source/@url"/>
 					</xsl:attribute>
 					<xsl:value-of select="."/>
 				</xsl:element>

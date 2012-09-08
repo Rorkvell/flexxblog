@@ -28,7 +28,10 @@ $rssDoc->load($fname, LIBXML_COMPACT | LIBXML_NOBLANKS);
 $meta = Array();
 if (isset($_POST['name'])) $meta['author'] = trim($_POST['name']);
 else $meta['autor'] = 'anonymous';
-if (isset($_POST['source']) && !empty($_POST['source'])) $meta['author'] = $_POST['source'] . ' ' . $meta['author'];
+if (isset($_POST['source']) && !empty($_POST['source'])) {
+//	$meta['author'] = $_POST['source'] . ' ' . $meta['author'];
+	$meta['source'] = trim($_POST['source']);
+}
 $item = $rssDoc->appendItem($_POST['text'], $meta, null, null, null);
 
 if (isset($item)) {
