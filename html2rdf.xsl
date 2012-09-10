@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" 
+	xmlns="http://www.w3.org/1999/xhtml" 
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
 	xmlns:xlink	= "http://www.w3.org/1999/xlink"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
-	xmlns="http://www.w3.org/1999/xhtml" 
 	xmlns:foaf="http://xmlns.com/foaf/0.1/" 
-	xmlns:dc="http://purl.org/dc/elements/1.0/" 
+	xmlns:dc="http://purl.org/dc/elements/1.1/" 
+	xmlns:dct="http://purl.org/dc/terms/"
 	xmlns:doap="http://usefulinc.com/ns/doap#" 
 	xmlns:admin="http://webns.net/mvcb/"
 	xmlns:fn="http://www.w3.org/2005/xpath-functions">
@@ -14,8 +15,8 @@
 <xsl:output method="xml" version="1.0" encoding="utf-8" omit-xml-declaration="no" standalone="no" indent="yes"/>
 <xsl:strip-space elements="*"/>
 
-<xsl:param name="REF"/>	<!--  URL to search for, put into dc:source -->
-<xsl:param name="SRC"/>
+<xsl:param name="REF"/>	<!--  URL to search for, put into dc:source if found -->
+<xsl:param name="SRC"/>	<!--  Source URI to include in rdf:about -->
 
 <xsl:template match="/">
 	<xsl:apply-templates select="html"/>
@@ -27,20 +28,24 @@
 			<xsl:attribute name="rdf:about">
 				<xsl:value-of select="$SRC"/>
 			</xsl:attribute>
-			<xsl:apply-templates select="/html/@lang"/>
-			<xsl:apply-templates select="/html/head/title"/>
-			<xsl:apply-templates select="//link[@rel]"/>
-			<xsl:apply-templates select="//meta[@name]"/>
-			<!--<xsl:comment>******* BODY *******</xsl:comment>-->
+
 			<xsl:choose>
 				<xsl:when test="/html/head/meta[@name='robots']">
 					<xsl:if test="not(contains(/html/head/meta[@name='robots']/@content, 'noindex'))">
-						<xsl:apply-templates select="//a[@rel]"/>
-						<xsl:apply-templates select="/html/body" mode="BODY"/>
+						<xsl:apply-templates select="/html/@lang"/>
+						<xsl:apply-templates select="/html/head/title"/>
+						<xsl:apply-templates select="//link[@rel]"/>
+						<xsl:apply-templates select="//meta[@name]"/>
+						<xsl:if test="not(contains(/html/head/meta[@name='roots']/@content, 'nosnippets'))">
+							<xsl:apply-templates select="/html/body" mode="BODY"/>
+						</xsl:if>
 					</xsl:if>
 				</xsl:when>
 				<xsl:otherwise>
-					<xsl:apply-templates select="//a[@rel]"/>
+					<xsl:apply-templates select="/html/@lang"/>
+					<xsl:apply-templates select="/html/head/title"/>
+					<xsl:apply-templates select="//link[@rel]"/>
+					<xsl:apply-templates select="//meta[@name]"/>
 					<xsl:apply-templates select="/html/body" mode="BODY"/>
 				</xsl:otherwise>
 			</xsl:choose>
@@ -56,7 +61,7 @@
 
 <xsl:template match="title">
 	<xsl:element name="dc:title">
-		<xsl:value-of select="."/>
+		<xsl:value-of select="normalize-space(.)"/>
 	</xsl:element>
 </xsl:template>
 
@@ -94,6 +99,7 @@
 		</xsl:attribute>
 		<xsl:choose>
 			<xsl:when test="../meta[@name='author']">
+			<xsl:comment>meta author found</xsl:comment>
 				<xsl:value-of select="../meta[@name='author']/@content"/>
 			</xsl:when>
 			<xsl:when test="../meta[@name='dc:creator']">
@@ -102,7 +108,7 @@
 			<xsl:when test="../meta[@name='DC.creator']">
 				<xsl:value-of select="../meta[@name='DC.creator']/@content"/>
 			</xsl:when>
-			<xsl:when test="./@title">
+ 			<xsl:when test="./@title">
 				<xsl:value-of select="./@title"/>
 			</xsl:when>
 			<xsl:otherwise>
@@ -114,12 +120,6 @@
 
 <xsl:template match="link[@rel='alternate']">
 	<xsl:element name="dc:relation">
-<!--		<xsl:attribute name="xlink:type">
-			<xsl:text>simple</xsl:text>
-		</xsl:attribute>
-		<xsl:attribute name="xlink:href">
-			<xsl:value-of select="./@href"/>
-		</xsl:attribute> -->
 		<xsl:attribute name="rdf:resource">
 			<xsl:value-of select="./@href"/>
 		</xsl:attribute>
@@ -143,10 +143,6 @@
 <xsl:template match="link[@rel='stylesheet']|link[@rel='search']|link[@rel='apple-touch-icon-precomposed']|link[@rel='shortcut icon']"/>
 
 <xsl:template match="link">
-<!--	<xsl:comment>
-		<xsl:text>link: </xsl:text>
-		<xsl:value-of select="./@rel"/>
-	</xsl:comment>-->
 </xsl:template>
 
 <!-- ******* META ******* -->
@@ -192,22 +188,33 @@
 </xsl:template>
 
 <xsl:template match="meta">
-<!--	<xsl:comment>
-		<xsl:value-of select="@name"/>
-		<xsl:text> = </xsl:text>
-		<xsl:value-of select="@content"/>
-	</xsl:comment>-->
 </xsl:template>
 
 <!-- ******* BODY ******* -->
 
-<xsl:template match="a[@rel='copyright']|a[@rel='dc:rights']|a[@rel='DC.rights']|a[@rel='license']">
+<xsl:template match="a[@rel='copyright']|a[@rel='dc:rights']|a[@rel='DC.rights']|a[@rel='license']" mode="BODY">
 	<xsl:element name="dc:rights">
-		<xsl:value-of select="./@href"/>
+		<xsl:attribute name="rdf:resource">
+			<xsl:value-of select="./@href"/>
+		</xsl:attribute>
+		<xsl:value-of select="."/>
 	</xsl:element>
 </xsl:template>
 
-<xsl:template match="a[@rel='author']|a[@rel='dc:creator']|a[@rel='DC.author']|a[@rev='made']">
+<xsl:template match="a[@rel]" mode="BODY">
+	<xsl:choose>
+		<xsl:when test="contains(./@rel, 'dc:creator') or contains(./@rel, 'author')">
+			<xsl:element name="dc:creator">
+				<xsl:attribute name="rdf:resource">
+					<xsl:value-of select="./@href"/>
+				</xsl:attribute>
+				<xsl:value-of select="."/>
+			</xsl:element>
+		</xsl:when>
+	</xsl:choose>
+</xsl:template>
+
+<xsl:template match="a[@rel='author']|a[@rel='dc:creator']|a[@rel='DC.author']|a[@rev='made']" mode="BODY">
 	<xsl:element name="dc:creator">
 		<xsl:attribute name="rdf:resource">
 			<xsl:value-of select="./@href"/>
@@ -216,36 +223,49 @@
 	</xsl:element>
 </xsl:template>
 
-<xsl:template match="a">
+<xsl:template match="a" mode="BODY">
 	<xsl:choose>
-		<xsl:when test="starts-with(./@href, $REF)">
+		<xsl:when test="starts-with(./@href, $REF)">	<!--  TODO: equality check? -->
 			<xsl:element name="dc:source">
 				<xsl:attribute name="rdf:resource">
 					<xsl:value-of select="./@href"/>
 				</xsl:attribute>
-				<xsl:value-of select="."/>
+				<xsl:value-of select="normalize-space(.)"/>
+				<!-- SOURCE TEXT -->
+				<xsl:variable name="ABSTRACT">
+					<xsl:value-of select=".."/>
+				</xsl:variable>
+				<xsl:if test="$ABSTRACT != ''">
+					<xsl:element name="dct:abstract">
+						<!-- <xsl:value-of select="normalize-space(..)"/>-->
+						<xsl:apply-templates select=".." mode="ABSTRACT"/>
+					</xsl:element>
+				</xsl:if>
 			</xsl:element>
 		</xsl:when>
+		<!--  TODO: Check SRC (if existing, pingback was already registered) -->
 		<xsl:otherwise>
-<!--			<xsl:comment>
-				<xsl:value-of select="./@rel"/>
-				<xsl:text>: </xsl:text>
-				<xsl:value-of select="."/>
-				<xsl:text> (</xsl:text>
-				<xsl:value-of select="./@href"/>
-				<xsl:text>)</xsl:text>
-			</xsl:comment>-->
 		</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
 
-<!-- ******* BODY2 ******* -->
-
-<!-- Test -->
-<xsl:template match="a[@rel]|a[@class]|a[@rev]" mode="BODY">
-<!--<xsl:comment>a rel=<xsl:value-of select='@rel'/>, rev=<xsl:value-of select='@rev'/>, class=<xsl:value-of select='@class'/></xsl:comment>-->
-	<xsl:apply-templates mode="BODY"/>
+<!-- ******* ABSTRACT ******* -->
+<xsl:template match="text()" mode="ABSTRACT">
+	<xsl:value-of select="normalize-space(.)"/>
+	<xsl:text> </xsl:text>
 </xsl:template>
+
+<xsl:template match="*" mode="ABSTRACT">
+	<xsl:apply-templates mode="ABSTRACT"/>
+</xsl:template>
+
+<xsl:template match="img" mode="ABSTRACT">
+	<xsl:if test="./@alt">
+		<xsl:value-of select="./@alt"/>
+	</xsl:if>
+</xsl:template>
+
+<!-- ******* BODY2 ******* -->
 
 <xsl:template match="*|text()" mode="BODY">
 	<xsl:apply-templates mode="BODY"/>
@@ -254,9 +274,9 @@
 <xsl:template match="*[@class]" mode="BODY">
 	<xsl:choose>
 		<xsl:when test="contains(./@class, 'vcard')">
-			<xsl:call-template name="META1">
+<!--			<xsl:call-template name="META1">
 				<xsl:with-param name="CLASS" select="./@class"/>
-			</xsl:call-template>
+			</xsl:call-template>-->
 		</xsl:when>
 		<xsl:otherwise>
 			<xsl:apply-templates mode="BODY"/>

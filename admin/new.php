@@ -3,7 +3,7 @@
 require_once('../rss2.class.php');
 //require_once('../markdown.php');
 include_once('users.php');
-require_once('conf.php');
+require_once('../conf.php');
 
 define('DEBUG', false);
 

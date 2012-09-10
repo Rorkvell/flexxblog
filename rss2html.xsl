@@ -2,7 +2,8 @@
 <xsl:stylesheet version="1.0" 
 	xmlns:xsl	= "http://www.w3.org/1999/XSL/Transform"
 	xmlns:xlink	= "http://www.w3.org/1999/xlink"
-	xmlns:dc	= "http://purl.org/dc/elements/1.0/"
+	xmlns:dc	= "http://purl.org/dc/elements/1.1/"
+	xmlns:dct="http://purl.org/dc/terms/"
  	xmlns		= "http://www.w3.org/1999/xhtml" 
 	exclude-result-prefixes="xsl">
 
@@ -148,14 +149,6 @@
 </xsl:template>
 
 <xsl:template match="description" mode="HEAD">
-<!--	<xsl:element name="meta">
-		<xsl:attribute name="name">
-			<xsl:text>description</xsl:text>
-		</xsl:attribute>
-		<xsl:attribute name="content">
-			<xsl:value-of select="normalize-space(.)"/>
-		</xsl:attribute>
-	</xsl:element>  -->
 </xsl:template>
 
 <xsl:template match="copyright" mode="HEAD">
@@ -176,20 +169,26 @@
 </xsl:template>
 
 <xsl:template match="managingEditor" mode="HEAD">	<!-- moved to dc:creator element -->
-<!--	<xsl:choose>
-		<xsl:when test="starts-with(., 'http://')">
+	<xsl:if test="not(../dc:creator)">
+		<xsl:if test="./@xlink:href">
 			<xsl:element name="link">
-				<xsl:attribute name="rel"><xsl:text>DC.creator</xsl:text></xsl:attribute>
-				<xsl:attribute name="href"><xsl:value-of select="."/></xsl:attribute>
+				<xsl:attribute name="rel">
+					<xsl:text>author</xsl:text>
+				</xsl:attribute>
+				<xsl:attribute name="href">
+					<xsl:value-of select="./@xlink:href"/>
+				</xsl:attribute>
 			</xsl:element>
-		</xsl:when>
-		<xsl:otherwise>
-			<xsl:element name="meta">
-				<xsl:attribute name="name"><xsl:text>DC.creator</xsl:text></xsl:attribute>
-				<xsl:attribute name="content"><xsl:value-of select="."/></xsl:attribute>
-			</xsl:element>
-		</xsl:otherwise>
-	</xsl:choose> -->
+		</xsl:if>
+		<xsl:element name="meta">
+			<xsl:attribute name="name">
+				<xsl:text>author</xsl:text>
+			</xsl:attribute>
+			<xsl:attribute name="content">
+				<xsl:value-of select="."/>
+			</xsl:attribute>
+		</xsl:element>
+	</xsl:if>
 </xsl:template>
 
 <xsl:template match="item" mode="HEAD">

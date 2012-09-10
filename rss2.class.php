@@ -190,14 +190,14 @@ class rssDocument extends xmlDocument{
 							$e->setAttribute('isPermaLink', 'true');
 						}
 					case 'author':
-						list($url, $aname) = explode(' ', $val, 2);
-						if (empty($aname)) {
+						//list($url, $aname) = explode(' ', $val, 2);
+						//if (empty($aname)) {
 							$e = $item->appendChild($this->createElement($key, $val));
-						} else {
-							$e = $item->appendChild($this->createElement($key, $aname));
-							$e->setAttributeNs('http://www.w3.org/1999/xlink', 'xlink:type', 'simple');
-							$e->setAttributeNs('http://www.w3.org/1999/xlink', 'xlink:href', $url);							
-						}
+						//} else {
+						//	$e = $item->appendChild($this->createElement($key, $aname));
+						//	$e->setAttributeNs('http://www.w3.org/1999/xlink', 'xlink:type', 'simple');
+						//	$e->setAttributeNs('http://www.w3.org/1999/xlink', 'xlink:href', $url);							
+						//}
 					case 'category':
 						// TODO
 						break;
