@@ -1,8 +1,9 @@
 <?php
 
 require_once('rss2.class.php');
+require_once('evlog.php');
+include_once('conf.php');
 
-define('newCommentsFeed', 'comments.rss');	// TODO: move to config file
 
 //header('Content-type: text/plain');
 
@@ -16,6 +17,10 @@ if (strlen($text) < 3) die('Text length error');
 
 if (isset($_POST['rss'])) $rssFile = $_POST['rss'];
 else die('error on input');
+if (empty($rssFile)) die('Error: source file name empty');
+
+event_log(__FILE__, 'Comment for ' . $rssFile);
+
 
 // Load comment feed
 $rssDoc = new rssDocument();

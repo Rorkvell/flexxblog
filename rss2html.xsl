@@ -3,7 +3,7 @@
 	xmlns:xsl	= "http://www.w3.org/1999/XSL/Transform"
 	xmlns:xlink	= "http://www.w3.org/1999/xlink"
 	xmlns:dc	= "http://purl.org/dc/elements/1.1/"
-	xmlns:dct="http://purl.org/dc/terms/"
+	xmlns:dct	= "http://purl.org/dc/terms/"
  	xmlns		= "http://www.w3.org/1999/xhtml" 
 	exclude-result-prefixes="xsl">
 
@@ -675,6 +675,8 @@
 					<xsl:value-of select="/rss/channel/dc:identifier"/>
 				</xsl:attribute>
 			</xsl:element>
+<xsl:comment><xsl:value-of select="/rss/channel/dc:identifier"/></xsl:comment>
+<xsl:comment><xsl:value-of select="/rss/channel/dc:creator"/></xsl:comment>
 			
 				
 		</xsl:element>	<!-- fieldset -->

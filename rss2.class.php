@@ -2,8 +2,8 @@
 
 include_once "markdown.php";
 require_once "xml.class.php";
+include_once "conf.php";
 
-define('version', '0.0.1dev');
 
 class rssDocument extends xmlDocument{
 
@@ -66,7 +66,7 @@ class rssDocument extends xmlDocument{
 		$l .= $now['year'] . '/' . $fname;
 		$link->parentNode->replaceChild($this->createElement('link', $l . '.html.de'), $link);
 		return $this->channel->appendChild(
-			$this->createElementNS('http://purl.org/dc/elements/1.0/', 'dc:identifier', $l . '.rss')
+			$this->createElementNS(NAMESPACE_DC, 'dc:identifier', $l . '.rss')
 		)->nodeValue;
 	}
 	
@@ -118,10 +118,10 @@ class rssDocument extends xmlDocument{
 			$pd = $pd->nextSibling;
 		if (!isset($pd)) {
 			$pd = $this->channel->appendChild($this->createElement('pubDate', $nowRss));
-			$pd->setAttributeNS('http://purl.org/dc/elements/1.0/', 'dc:date', date(DATE_W3C, $now));
+			$pd->setAttributeNS(NAMESPACE_DC, 'dc:date', date(DATE_W3C, $now));
 		}
 		$lbd = $this->setElement('lastBuildDate', date(DATE_RSS, $now));
-		$lbd->setAttributeNS('http://purl.org/dc/elements/1.0/', 'dc:date', date(DATE_W3C, $now));
+		$lbd->setAttributeNS(NAMESPACE_DC, 'dc:date', date(DATE_W3C, $now));
 		$this->setElement('generator', 'flexxblog v' . version);
 		return parent::saveXML($node, $options);
 	}
@@ -137,10 +137,10 @@ class rssDocument extends xmlDocument{
 			$pd = $pd->nextSibling;
 		if (!isset($pd)) {
 			$pd = $this->channel->appendChild($this->createElement('pubDate', $nowRss));
-			$pd->setAttributeNS('http://purl.org/dc/elements/1.0/', 'dc:date', date(DATE_W3C, $now));
+			$pd->setAttributeNS(NAMESPACE_DC, 'dc:date', date(DATE_W3C, $now));
 		}
 		$lbd = $this->setElement('lastBuildDate', date(DATE_RSS, $now));
-		$lbd->setAttributeNS('http://purl.org/dc/elements/1.0/', 'dc:date', date(DATE_W3C, $now));
+		$lbd->setAttributeNS(NAMESPACE_DC, 'dc:date', date(DATE_W3C, $now));
 		return parent::save($filename, $options);
 	}
 	
@@ -210,7 +210,7 @@ class rssDocument extends xmlDocument{
 		}
 		$now = time();
 		$pd = $item->appendChild($this->createElement('pubDate', date(DATE_RSS, $now)));
-		$pd->setAttributeNS('http://purl.org/dc/elements/1.0/', 'dc:date', date(DATE_W3C, $now));
+		$pd->setAttributeNS(NAMESPACE_DC, 'dc:date', date(DATE_W3C, $now));
 		return $item;
 	}
 

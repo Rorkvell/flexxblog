@@ -1,6 +1,8 @@
 <?php
 
 define('DEBUG', false);
+define('UA', 'flexxblog');
+define('version', '0.0.1dev');
 
 $formItems = array(
 	'title' => 'Titel',
@@ -9,6 +11,12 @@ $formItems = array(
 $baseFeed = '../RorkvellNews.rss';
 $lang = 'de';
 
-define('UA', 'flexxblog');
+define('newCommentsFeed', 'comments.rss');
+
+define('NAMESPACE_DC', 'http://purl.org/dc/elements/1.1/');
+define('NAMESPACE_DCT', 'http://purl.org/dc/terms/');
+define('NAMESPACE_RDF', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+define('NAMESPACE_RDFS', 'http://www.w3.org/2000/01/rdf-schema#');
+define('NAMESPACE_XLINK', 'http://www.w3.org/1999/xlink');
 
 ?>
