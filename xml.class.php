@@ -18,7 +18,7 @@ class xmlDocument extends DOMDocument {
 		'<hr ${1}/>'
 		);
 	
-	public function saveHTML($node = null) {
+	public function saveHTML($node = null, $schema = null) {
 		if (!isset($this->documentElement)) return parent::saveHTML($node);
 		$transformName = $this->documentElement->nodeName . '2html.xsl';
 		if (!file_exists($transformName)) $transformName = '../' . $transformName;
@@ -31,6 +31,9 @@ class xmlDocument extends DOMDocument {
 		$proc = new XSLTProcessor();
 		if (!isset($proc)) die("Error on creating XSLTProcessor");
 		$proc->importStylesheet($xslDoc);
+		if (isset($schema)) {
+			$proc->setParameter('', 'TYPE', $schema);
+		}
 		if (isset($node)) $rc = $proc->transformToXML($node);
 		else $rc = $proc->transformToXML($this);
 		if ($rc === false) die("Error on converting to html");
@@ -42,11 +45,11 @@ class xmlDocument extends DOMDocument {
 		return $rc;
 	}
 	
-	public function saveHTMLFile($filename) {
+	public function saveHTMLFile($filename, $schema = null) {
 		if (!isset($filename)) die("Error: No filename given");
 		$fh = fopen($filename, "w");
 		if (!isset($fh)) die("Error opening file");
-		$rc = $this->saveHTML();
+		$rc = $this->saveHTML(null, $schema);
 		if ($rc === false) die("Error converting to html");
 		$n = fwrite($fh, $rc);
 		fclose($fh);

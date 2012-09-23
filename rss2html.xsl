@@ -15,6 +15,10 @@
 	encoding="utf-8"
 	doctype-system="about:legacy-compat"/>
 
+<xsl:param name="TYPE">
+	<xsl:text>Blog</xsl:text>
+</xsl:param>
+
 <xsl:param name="FORMAT">
 	<xsl:choose>
 		<xsl:when test="document('')/xsl:stylesheet/xsl:output/@method = 'html'">
@@ -47,6 +51,14 @@
 
 <xsl:template match="/rss">
 	<xsl:element name="html">
+		<!-- see http://notizblog.org/2012/09/21/schema-org-what-ive-learned-so-far/#comment-185839 -->
+		<!-- see http://schema.org/Blog -->
+		<!-- http://schema.org/BlogPosting -->
+		<xsl:attribute name="itemscope"><xsl:text>itemscope</xsl:text>	</xsl:attribute>
+		<xsl:attribute name="itemtype">
+			<xsl:text>http://schema.org/</xsl:text>
+			<xsl:value-of select="$TYPE"/>
+		</xsl:attribute>
 		<xsl:apply-templates select="channel/language"/>
 		<xsl:apply-templates select="channel"/>
 	</xsl:element>

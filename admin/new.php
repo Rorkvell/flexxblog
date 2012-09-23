@@ -55,7 +55,7 @@ function saveCommentRss($doc) {
 function saveCommentHtml($doc, $rssDst, $lang) {
 	$htmlDst = substr($rssDst, 0, -4) . '.html';
 	if (isset($lang) && !empty($lang)) $htmlDst .= '.' . $lang;
-	$rc = $doc->saveHTMLFile($htmlDst);
+	$rc = $doc->saveHTMLFile($htmlDst, 'BlogPost');
 	if ($rc === false) die("Error: Could not write " . $htmlDst . "\n");
 	$rc = chmod($htmlDst, 0640);
 	if ($rc === false) die("Error on chmod" . $htmlDst);

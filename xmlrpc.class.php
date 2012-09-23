@@ -1,5 +1,6 @@
 <?php 
 
+include_once('evlog.php');
 /*
  * @see: http://xmlrpc.scripting.com/spec.html
  * @see: http://www.hixie.ch/specs/pingback/pingback-1.0
@@ -178,6 +179,11 @@ class xmlrpcDocument extends DOMDocument {
 			} else return $this->errorResponse(0, $fname . ' not found');
 		}
 		return $this->errorResponse(0, 'dummy');
+	}
+
+	public function methodResponse() {
+		$e = $this->documentElement;
+
 	}
 	
 
