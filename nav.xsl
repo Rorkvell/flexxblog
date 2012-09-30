@@ -58,7 +58,7 @@
 						<xsl:text>/impressum</xsl:text>
 					</xsl:attribute>
 					<xsl:attribute name="rel">
-						<xsl:text>me dc:creator</xsl:text>
+						<xsl:text>me DC.creator</xsl:text>
 					</xsl:attribute>
 					<xsl:element name="button">
 						<xsl:attribute name="type">
@@ -93,8 +93,25 @@
 					</xsl:element>
 				</xsl:element>
 			</xsl:if>
-
 		</xsl:element>
+		<xsl:if test="$TYPE = 'Blog'">
+			<xsl:element name="h4">
+				<xsl:text>Neue Kommentare</xsl:text>
+			</xsl:element>
+			<xsl:element name="div">
+				<xsl:attribute name="id">
+					<xsl:text>newcomments</xsl:text>
+				</xsl:attribute>
+			</xsl:element>
+ 			<xsl:element name="script">
+				<xsl:attribute name="type">
+					<xsl:text>text/javascript</xsl:text>
+				</xsl:attribute>
+				<xsl:attribute name="src">
+					<xsl:value-of select="$FILE"/><xsl:text>.js</xsl:text>
+				</xsl:attribute>
+			</xsl:element>
+		</xsl:if>
 	</xsl:element>
 </xsl:template>
 

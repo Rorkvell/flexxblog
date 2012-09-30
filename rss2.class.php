@@ -156,7 +156,9 @@ class rssDocument extends xmlDocument{
 		$item = $this->createElement('item');
 		$itemId = isset($id)?$id:$this->GUID();
 		$item->setAttribute('xml:id', $itemId);
-		$baseLink = $this->getChannelElement('link');
+		if (!isset($meta) || !array_key_exists('index', $meta)) {
+			$baseLink = $this->getChannelElement('link');
+		}
 		if (isset($baseLink) && !empty($baseLink->nodeValue)) {
 			$item->appendChild($this->createElement('link', $baseLink->nodeValue . '#' . $itemId));
 		}

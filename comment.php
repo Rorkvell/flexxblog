@@ -48,7 +48,7 @@ chmod($fname, 0640);
 
 $fname = substr($fname, 0, -4) . '.html.de';
 //print $rssDoc->saveHTML();
-$rssDoc->saveHTMLFile($fname);	// Save comment feed html version
+$rssDoc->saveHTMLFile($fname, 'BlogPosting');	// Save comment feed html version
 chmod($fname, 0640);
 
 $link = $rssDoc->getChannelElement('link');

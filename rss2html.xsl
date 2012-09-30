@@ -101,6 +101,17 @@
 				<xsl:call-template name="XMLSTYLE"/>
 			</xsl:otherwise>
 		</xsl:choose>
+		<!-- Javascript jquery -->
+		<xsl:if test="$TYPE = 'Blog'">
+			<xsl:element name="script">
+				<xsl:attribute name="type">
+					<xsl:text>text/javascript</xsl:text>
+				</xsl:attribute>
+				<xsl:attribute name="src">
+					<xsl:text>/js/jquery.js</xsl:text>
+				</xsl:attribute>
+			</xsl:element>
+		</xsl:if>
 	</xsl:element>
 	<xsl:element name="body">
 		<xsl:element name="header">
@@ -147,7 +158,7 @@
 		</xsl:element> <!-- div#main -->
 		
 		<xsl:call-template name="FOOTER"/>
-		
+				
 	</xsl:element>
 </xsl:template>
 
@@ -156,11 +167,13 @@
 
 <xsl:template match="title" mode="HEAD">
 	<xsl:element name="title">
+		<xsl:attribute name="itemprop"><xsl:text>name</xsl:text></xsl:attribute>
 		<xsl:value-of select="normalize-space(.)"/>
 	</xsl:element>
 </xsl:template>
 
 <xsl:template match="description" mode="HEAD">
+<!-- TODO: Check usage. See dc:description -->
 </xsl:template>
 
 <xsl:template match="copyright" mode="HEAD">
@@ -210,7 +223,7 @@
 <xsl:template match="link" mode="HEAD">
 	<xsl:element name="link">
 		<xsl:attribute name="rel">
-			<xsl:text>dc:identifier</xsl:text>
+			<xsl:text>DC.identifier</xsl:text>
 		</xsl:attribute>
 		<xsl:attribute name="href">
 			<xsl:value-of select="."/>
@@ -338,6 +351,7 @@
 		<xsl:attribute name="id">
 			<xsl:text>main_logo</xsl:text>
 		</xsl:attribute>
+		<xsl:attribute name="itemprop"><xsl:text>image</xsl:text></xsl:attribute>
 		<xsl:apply-templates select="../title" mode="LOGO"/>
 	</xsl:element>
 </xsl:template>
@@ -350,12 +364,27 @@
 
 
 <xsl:template match="description" mode="BODY">
-	<xsl:element name="article">
-		<xsl:attribute name="class">
-			<xsl:text>entry-content</xsl:text>
-		</xsl:attribute>
-		<xsl:value-of select="normalize-space(.)" disable-output-escaping="yes"/>
-	</xsl:element>
+	<xsl:choose>
+		<xsl:when test="$TYPE = 'Blog'">
+			<xsl:element name="p">
+				<xsl:attribute name="itemprop">
+					<xsl:text>description</xsl:text>
+				</xsl:attribute>
+				<xsl:value-of select="."/>
+			</xsl:element>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:element name="article">
+				<xsl:attribute name="class">
+					<xsl:text>entry-content</xsl:text>
+				</xsl:attribute>
+				<xsl:attribute name="itemprop">
+					<xsl:text>blogPosting</xsl:text>
+				</xsl:attribute>
+				<xsl:value-of select="normalize-space(.)" disable-output-escaping="yes"/>
+			</xsl:element>
+		</xsl:otherwise>
+	</xsl:choose>
 </xsl:template>
 
 <xsl:template match="@dc:date">
@@ -385,7 +414,7 @@
 						<xsl:value-of select="./@xlink:href"/>
 					</xsl:attribute>
 					<xsl:attribute name="rel">
-						<xsl:text>dc:creator</xsl:text>
+						<xsl:text>DC.creator</xsl:text>
 					</xsl:attribute>
 					<xsl:value-of select="."/>
 				</xsl:element>
@@ -393,7 +422,7 @@
 			<xsl:otherwise>
 				<xsl:element name="span">
 					<xsl:attribute name="class">
-						<xsl:text>dc:creator</xsl:text>
+						<xsl:text>DC.creator</xsl:text>
 					</xsl:attribute>
 					<xsl:value-of select="."/>
 				</xsl:element>
@@ -422,20 +451,34 @@
 <xsl:template match="item" mode="BODY">
 	<xsl:element name="li">
 		<xsl:element name="article">
+			<xsl:choose>
+				<xsl:when test="$TYPE = 'Blog'">
+					<xsl:attribute name="itemprop">
+						<xsl:text>blogPost</xsl:text>
+					</xsl:attribute>
+				</xsl:when>
+				<xsl:when test="$TYPE = 'BlogPosting'">
+					<xsl:attribute name="itemprop">
+						<xsl:text>comment</xsl:text>
+					</xsl:attribute>
+				</xsl:when>
+			</xsl:choose>
 			<xsl:apply-templates select="@xml:id"/>
 			<xsl:apply-templates select="title" mode="ITEM"/>
-			<xsl:apply-templates select="pubDate" mode="ITEM"/>
-			<xsl:apply-templates select="description" mode="ITEM"/>
-			<xsl:apply-templates select="author" mode="ITEM"/>
-			<xsl:if test="category">
-				<xsl:element name="ul">
-					<xsl:attribute name="class">
-						<xsl:text>categories</xsl:text>
-					</xsl:attribute>
-					<xsl:apply-templates select="category" mode="ITEM"/>
-				</xsl:element>
+			<xsl:if test="$TYPE != 'CommentsList'">
+				<xsl:apply-templates select="pubDate" mode="ITEM"/>
+				<xsl:apply-templates select="description" mode="ITEM"/>
+				<xsl:apply-templates select="author" mode="ITEM"/>
+				<xsl:if test="category">
+					<xsl:element name="ul">
+						<xsl:attribute name="class">
+							<xsl:text>categories</xsl:text>
+						</xsl:attribute>
+						<xsl:apply-templates select="category" mode="ITEM"/>
+					</xsl:element>
+				</xsl:if>
+				<xsl:apply-templates select="guid" mode="ITEM"/>
 			</xsl:if>
-			<xsl:apply-templates select="guid" mode="ITEM"/>
 		</xsl:element>
 	</xsl:element>
 </xsl:template>
@@ -476,16 +519,28 @@
 	<xsl:element name="h3">
 	<!-- 	<xsl:apply-templates select="../@xml:id"/> -->
 		<xsl:choose>
-			<xsl:when test="../guid/@isPermaLink='true'">
+			<xsl:when test="../link">
 				<xsl:element name="a">
 					<xsl:attribute name="href">
-						<xsl:value-of select="../guid"/>
+						<xsl:value-of select="../link"/>
 					</xsl:attribute>
 					<xsl:value-of select="."/>
 				</xsl:element>
 			</xsl:when>
 			<xsl:otherwise>
-				<xsl:value-of select="."/>
+				<xsl:choose>
+					<xsl:when test="../guid/@isPermaLink='true'">
+						<xsl:element name="a">
+							<xsl:attribute name="href">
+									<xsl:value-of select="../guid"/>
+							</xsl:attribute>
+							<xsl:value-of select="."/>
+						</xsl:element>
+					</xsl:when>
+					<xsl:otherwise>
+						<xsl:value-of select="."/>
+					</xsl:otherwise>
+				</xsl:choose>
 			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:element>
@@ -509,6 +564,11 @@
 		<xsl:attribute name="class">
 			<xsl:text>entry-content</xsl:text>
 		</xsl:attribute>
+		<xsl:if test="$TYPE = 'BlogPosting'">
+			<xsl:attribute name="itemprop">
+				<xsl:text>text</xsl:text>
+			</xsl:attribute>
+		</xsl:if>
 		<xsl:value-of select="normalize-space(.)" disable-output-escaping="yes"/>
 	</xsl:element>
 </xsl:template>

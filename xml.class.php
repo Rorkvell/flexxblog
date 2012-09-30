@@ -17,58 +17,76 @@ class xmlDocument extends DOMDocument {
 		'<input ${1}/>',
 		'<hr ${1}/>'
 		);
-	
-	public function saveHTML($node = null, $schema = null) {
-		if (!isset($this->documentElement)) return parent::saveHTML($node);
-		$transformName = $this->documentElement->nodeName . '2html.xsl';
-		if (!file_exists($transformName)) $transformName = '../' . $transformName;
-		if (!file_exists($transformName)) die("Error: Could not find " . $transformName);
 		
+	public $transformName = null;
+	
+	public function saveAs($type, $node = null, $params = null) {
+		if (!isset($type)) die('Error: No target type given');
+		if (!isset($this->documentElement)) die('Error: No root element given');
+		if (!isset($this->transformName))
+			$this->transformName = $this->documentElement->nodeName . '2' . $type . '.xsl';
+		if (!file_exists($this->transformName)) $this->transformName = '../' . $this->transformName;
+		if (!file_exists($this->transformName)) die("Error: Could not find " . $this->transformName);
+		// Get xsl stylesheet		
 		$xslDoc = new DOMDocument();
 		if (!isset($xslDoc)) die("Error on creating xslDoc");
-		$xslDoc->load($transformName);
-
+		$xslDoc->load($this->transformName, LIBXML_NOBLANKS | LIBXML_NONET);
+		// Create xslt processor
 		$proc = new XSLTProcessor();
 		if (!isset($proc)) die("Error on creating XSLTProcessor");
 		$proc->importStylesheet($xslDoc);
-		if (isset($schema)) {
-			$proc->setParameter('', 'TYPE', $schema);
+		if (isset($params)) {
+			if (is_array($params)) {
+				foreach ($params as $key => $val) {
+					$proc->setParameter('', $key, $val);
+				}				
+			} else {
+				$proc->setParameter('', 'TYPE', $params);
+			}
 		}
+		// Transform document
 		if (isset($node)) $rc = $proc->transformToXML($node);
 		else $rc = $proc->transformToXML($this);
-		if ($rc === false) die("Error on converting to html");
-
+		if ($rc === false || empty($rc)) die('Error on converting to ' . $type);
+		$Doc = new DOMDocument();
+		$Doc->preserveWhiteSpace = false;
+		$Doc->formatOutput = true;
+		if ($type == 'html') {
+			$Doc->loadHTML($rc);
+			return $Doc->saveHTML();
+		} else {
+			$Doc->loadXML($rc);
+			return $Doc->saveXML();
+		}
+	}
+	
+	public function saveHTML($node = null, $params = null) {
+		$rc = $this->saveAs('html', $node, $params);
 		for ($i=0; $i<count(xmlDocument::$errorPatterns); $i++)
 			$rc = preg_replace(xmlDocument::$errorPatterns[$i], xmlDocument::$errorReplacements[$i], $rc);
-		//return preg_replace(xmlDocument::$errorPatterns, xmlDocument::$errorReplacements, $rc);
-		if (empty($rc)) die("Error on converting to html");
 		return $rc;
 	}
 	
-	public function saveHTMLFile($filename, $schema = null) {
+	public function saveHTMLFile($filename, $params = null) {
 		if (!isset($filename)) die("Error: No filename given");
+		$rc = $this->saveHTML(null, $params);
 		$fh = fopen($filename, "w");
 		if (!isset($fh)) die("Error opening file");
-		$rc = $this->saveHTML(null, $schema);
-		if ($rc === false) die("Error converting to html");
 		$n = fwrite($fh, $rc);
 		fclose($fh);
 		return $n;
 	}
 	
-	public function convertToHTMLDoc() {
-		$transformName = $this->documentElement->nodeName . '2html.xsl';
-		if (!file_exists($transformName)) $transformName = '../' . $transformName;
-		if (!file_exists($transformName)) return null;
-		
-		$this->normalizeDocument();
-		$xslDoc = new DOMDocument();
-		$xslDoc->load($transformName);
-
-		$proc = new XSLTProcessor();
-		$proc->importStylesheet($xslDoc);
-		$proc->setParameter('', 'FORMAT', 'HTML');
-		return $proc->transformToDoc($this);
+	public function convertToHTMLDoc($params = null) {
+		if (!isset($this->transformName))
+			$this->transformName = $this->documentElement->nodeName . '2html.xsl';
+		if (!file_exists($this->transformName)) $this->transformName = '../' . $this->transformName;
+		if (!file_exists($this->transformName)) return null;
+		$htmlDoc = new DomDocument();
+		$htmlDoc->preserveWhiteSpace = false;
+		$htmlDoc->formatOutput = true;
+		$htmlDoc->loadHTML($this->saveHTML($params));
+		return $htmlDoc;		
 	}
 	
 
