@@ -20,6 +20,17 @@ class xmlDocument extends DOMDocument {
 		
 	public $transformName = null;
 	
+	/**
+	 * 
+	 * saves the document as another xml (or html) document by applying 
+	 * an xsl stylesheet. The name of the stylesheet is <root node name>2<dest. document type>.xsl.
+	 * @param string $type The destination document type (root node name)
+	 * @param DOMNode $node (optional). If given, returns only the node and its subtree converted.
+	 * @param mixed $params 
+	 * 		If $params is a string, it is sent to the xsl stylesheet as TYPE. 
+	 * 		If params is an associative array, all the array members are sent to the xsl 
+	 * 		stylesheet, where key is the parameter name, and value is the parameters value.
+	 */
 	public function saveAs($type, $node = null, $params = null) {
 		if (!isset($type)) die('Error: No target type given');
 		if (!isset($this->documentElement)) die('Error: No root element given');
@@ -60,6 +71,16 @@ class xmlDocument extends DOMDocument {
 		}
 	}
 	
+	/**
+	 * 
+	 * Saves (converts to string) the document as html document by applying an
+	 * xsl stylesheet. The name of the stylesheet is <root node name>2html.xsl.
+	 * @param DOMNode $node (optional). If given, returns only the node and its subtree converted.
+	 * @param mixed $params 
+	 * 		If $params is a string, it is sent to the xsl stylesheet as TYPE. 
+	 * 		If params is an associative array, all the array members are sent to the xsl 
+	 * 		stylesheet, where key is the parameter name, and value is the parameters value.
+	 */
 	public function saveHTML($node = null, $params = null) {
 		$rc = $this->saveAs('html', $node, $params);
 		for ($i=0; $i<count(xmlDocument::$errorPatterns); $i++)
@@ -67,6 +88,16 @@ class xmlDocument extends DOMDocument {
 		return $rc;
 	}
 	
+	/**
+	 * 
+	 * Saves the document as html file by applying an xsl stylesheet.
+	 * The name of the stylesheet is <root node name>2html.xsl.
+	 * @param DOMNode $node (optional). If given, returns only the node and its subtree converted.
+	 * @param mixed $params 
+	 * 		If $params is a string, it is sent to the xsl stylesheet as TYPE. 
+	 * 		If params is an associative array, all the array members are sent to the xsl 
+	 * 		stylesheet, where key is the parameter name, and value is the parameters value.
+	 */
 	public function saveHTMLFile($filename, $params = null) {
 		if (!isset($filename)) die("Error: No filename given");
 		$rc = $this->saveHTML(null, $params);
@@ -77,6 +108,15 @@ class xmlDocument extends DOMDocument {
 		return $n;
 	}
 	
+	/**
+	 * 
+	 * Saves the document as html DOMDocument by applying an xsl stylesheet.
+	 * The name of the stylesheet is <root node name>2html.xsl.
+	 * @param mixed $params 
+	 * 		If $params is a string, it is sent to the xsl stylesheet as TYPE. 
+	 * 		If params is an associative array, all the array members are sent to the xsl 
+	 * 		stylesheet, where key is the parameter name, and value is the parameters value.
+	 */
 	public function convertToHTMLDoc($params = null) {
 		if (!isset($this->transformName))
 			$this->transformName = $this->documentElement->nodeName . '2html.xsl';
@@ -85,11 +125,9 @@ class xmlDocument extends DOMDocument {
 		$htmlDoc = new DomDocument();
 		$htmlDoc->preserveWhiteSpace = false;
 		$htmlDoc->formatOutput = true;
-		$htmlDoc->loadHTML($this->saveHTML($params));
+		$htmlDoc->loadHTML($this->saveHTML(null, $params));
 		return $htmlDoc;		
 	}
 	
-
-
 }
 ?>

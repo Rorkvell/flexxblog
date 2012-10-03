@@ -2,7 +2,7 @@
 
 define('DEBUG', false);
 define('UA', 'flexxblog');
-define('version', '0.0.1dev');
+define('version', '0.0.2dev');
 
 $formItems = array(
 	'title' => 'Titel',
@@ -12,6 +12,7 @@ $baseFeed = '../RorkvellNews.rss';
 $lang = 'de';
 
 define('newCommentsFeed', 'comments.rss');
+define('maxComments', 5); 
 
 define('NAMESPACE_DC', 'http://purl.org/dc/elements/1.1/');
 define('NAMESPACE_DCT', 'http://purl.org/dc/terms/');

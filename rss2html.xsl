@@ -39,6 +39,17 @@
 	<xsl:value-of select="/rss/channel/language"/>
 </xsl:param>
 
+<xsl:param name="CFORM">
+	<xsl:choose>
+		<xsl:when test="$TYPE = 'BlogPosting'">
+			<xsl:text>true</xsl:text>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:text>false</xsl:text>
+		</xsl:otherwise>
+	</xsl:choose>
+</xsl:param>
+
 
 <xsl:include href="style.xsl"/>
 <xsl:include href="nav.xsl"/>
@@ -151,7 +162,7 @@
 				</xsl:element>
 			</xsl:if>
 
-			<xsl:if test="/rss/channel/@xml:id">
+			<xsl:if test="/rss/channel/@xml:id and $CFORM = 'true'">
 				<xsl:call-template name="COMMENTFORM"/>
 			</xsl:if>
 			
@@ -485,6 +496,9 @@
 
 <xsl:template match="author" mode="ITEM">
 	<xsl:element name="p">
+		<xsl:attribute name="itemprop">
+			<xsl:text>author</xsl:text>
+		</xsl:attribute>
 		<xsl:choose>
 			<xsl:when test="./@xlink:href">
 				<xsl:element name="a">
@@ -566,7 +580,7 @@
 		</xsl:attribute>
 		<xsl:if test="$TYPE = 'BlogPosting'">
 			<xsl:attribute name="itemprop">
-				<xsl:text>text</xsl:text>
+				<xsl:text>articleBody</xsl:text>
 			</xsl:attribute>
 		</xsl:if>
 		<xsl:value-of select="normalize-space(.)" disable-output-escaping="yes"/>
@@ -618,6 +632,9 @@
 		</xsl:attribute>
 		<xsl:attribute name="method">
 			<xsl:text>post</xsl:text>
+		</xsl:attribute>
+		<xsl:attribute name="id">
+			<xsl:text>commentform</xsl:text>
 		</xsl:attribute>
 		<xsl:element name="fieldset">
 			<xsl:attribute name="id">
@@ -747,9 +764,21 @@
 					<xsl:value-of select="/rss/channel/dc:identifier"/>
 				</xsl:attribute>
 			</xsl:element>
+			<xsl:element name="input">
+				<xsl:attribute name="type">
+					<xsl:text>hidden</xsl:text>
+				</xsl:attribute>
+				<xsl:attribute name="name">
+					<xsl:text>aid</xsl:text>
+				</xsl:attribute>
+				<xsl:attribute name="value">
+					<xsl:value-of select="/rss/channel/@xml:id"/>
+				</xsl:attribute>
+			</xsl:element>
+<!-- 
 <xsl:comment><xsl:value-of select="/rss/channel/dc:identifier"/></xsl:comment>
 <xsl:comment><xsl:value-of select="/rss/channel/dc:creator"/></xsl:comment>
-			
+			 -->
 				
 		</xsl:element>	<!-- fieldset -->
 	</xsl:element>

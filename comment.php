@@ -1,25 +1,25 @@
 <?php
 
-require_once('rss2.class.php');
+require_once('rss2.old.php');	// Old comment version!
 require_once('evlog.php');
 include_once('conf.php');
 
 
 //header('Content-type: text/plain');
-
+$errMsg = 'error on input';
 if (isset($_POST['name'])) $name = trim($_POST['name']);
-else die('error on input');
+else die($errMsg);
 if (isset($_POST['text'])) $text=trim($_POST['text']);
-else die('error on input');
+else die($errMsg);
 
 if (strlen($name) < 2) die('Name length error');
 if (strlen($text) < 3) die('Text length error');
 
 if (isset($_POST['rss'])) $rssFile = $_POST['rss'];
-else die('error on input');
-if (empty($rssFile)) die('Error: source file name empty');
-
-event_log(__FILE__, 'Comment for ' . $rssFile);
+else die($errMsg);
+if (empty($rssFile)) die($errMsg);
+//if ($rssFile != $_SERVER['HTTP_REFERER']) 
+//	die('"' . $rssFile . '" != "' . $_SERVER['HTTP_REFERER'] . '"');
 
 
 // Load comment feed
@@ -27,7 +27,17 @@ $rssDoc = new rssDocument();
 $fname = basename($rssFile);	// Get name from post
 $fdir = dirname($rssFile);
 $fname = basename($fdir) . '/' . $fname;
-$rssDoc->load($fname, LIBXML_COMPACT | LIBXML_NOBLANKS);
+if (!file_exists($fname)) die($errMsg);
+if ($rssDoc->load($fname, LIBXML_COMPACT | LIBXML_NOBLANKS) === false) 
+	die($errMsg);
+$items = $rssDoc->getElementsByTagName('item');
+if ($items->length >= maxComments) die('maximum comment count reached');
+if (mb_detect_encoding($text, 'UTF-8', true) === FALSE) {
+	$enc = mb_detect_encoding($text);
+} else $enc = 'UTF-8';
+event_log(__FILE__, 'Comment for ' . $rssFile . ', enc=' . $enc);
+if ($enc != 'UTF-8') die($errMsg);
+
 
 // Meta data  
 $meta = Array();
@@ -43,6 +53,7 @@ if (isset($item)) {
 	$itemId = $item->getAttribute('xml:id');
 } else $itemId = null;
 
+$rssDoc->crop(maxComments);
 $rssDoc->save($fname);			// Save the comment feed
 chmod($fname, 0640);
 

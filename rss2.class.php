@@ -39,7 +39,7 @@ class rssDocument extends xmlDocument{
 		return $this->channel;
 	}
 
-	public function getChannelElement($name) {
+	public function getElement($name) {
 		if (!isset($this->channel)) die("rssDocument::getChannelElement():Channel not found");
 		if (!($this->channel->hasChildNodes())) {
 			die("Error, channel has no child nodes");
@@ -50,24 +50,15 @@ class rssDocument extends xmlDocument{
 		return $e;
 	}
 	
-	public function setId() {
-		$title = $this->getChannelElement('title');
-		if (!isset($title)) {
-			die("Error: Title not found");
+	public function getChannelElement($name) {
+		if (!isset($this->channel)) die("rssDocument::getChannelElement():Channel not found");
+		if (!($this->channel->hasChildNodes())) {
+			die("Error, channel has no child nodes");
 		}
-		$link = $this->getChannelElement('link');
-		if (!isset($link)) die("Error: link element not found");
-		$fname = str_replace(' ', '_', $title->nodeValue);
-		//error_log('rss2Document::setId: fname = ' . $fname . "\n", 3, $this->logFile);
-		$l = $link->nodeValue;
-		if ($l[strlen($l)-1] != '/') $l .= '/';
-		//error_log('rss2Document::setId: link->nodeValue = ' . $l . "\n", 3, $this->logFile);
-		$now = getdate();
-		$l .= $now['year'] . '/' . $fname;
-		$link->parentNode->replaceChild($this->createElement('link', $l . '.html.de'), $link);
-		return $this->channel->appendChild(
-			$this->createElementNS(NAMESPACE_DC, 'dc:identifier', $l . '.rss')
-		)->nodeValue;
+		$e = $this->channel->firstChild;
+		while (isset($e) && $e->nodeName != $name) $e = $e->nextSibling;
+		//if (isset($e)) print $e->nodeName . "\n";
+		return $e;
 	}
 	
 	public function addElement($name, $val=null) {
@@ -104,7 +95,48 @@ class rssDocument extends xmlDocument{
 	
 	public function setTitle($title) {
 		if (!isset($this->channel)) die("rssDocument::setTitle():Channel not found");
-		return $this->setElement('title', $title);
+		$rc = $this->setElement('title', $title);
+		$img = $this->getElement('image');
+		if (isset($img)) {
+			$c = $img->firstChild;
+			while (isset($c) && $c->nodeName != 'title') $c = $c->nextSibling;
+			if (isset($c)) $c->nodeValue = $title;
+		}
+		return $rc;
+	}
+	
+	public function setLink($title) {
+		$s = array(' ', 'Ä', 'Ö', 'Ü', 'ä', 'ö', 'ü', 'ß', '.');
+		$r = array('_', 'A', 'O', 'U', 'a', 'o', 'u', 's', '_');
+		if (!isset($this->channel)) die("rssDocument::setLink():Channel not found");
+		$c = $this->channel->firstChild;
+		while(isset($c) && $c->nodeName != 'link') $c = $c->nextSibling;
+		if (isset($c)) {
+			$file = $c->nodeValue;
+			$now = getdate();
+			//$rssDst = '../' . $now['year'] . '/' . basename($id);
+			$url = dirname($file);
+			$fname = basename($file);
+			$ext = substr($fname, strpos($fname, '.'));
+			$fname = rawurlencode(str_replace($s, $r, $title));
+			$i = 0;
+			while (file_exists('../' . $now['year'] . '/' . $fname)) {
+				$fname .= $i;
+				$i++;
+			}
+			$url .= '/' . $now['year'] . '/' . $fname;
+			$rc = $this->setElement('link', $url . $ext);
+			$img = $this->getElement('image');
+			if (isset($img)) {
+				$c = $img->firstChild;
+				while (isset($c) && $c->nodeName != 'link') $c = $c->nextSibling;
+				if (isset($c)) $c->nodeValue = $url . $ext;
+			}
+			$this->channel->appendChild(
+				$this->createElementNS(NAMESPACE_DC, 'dc:identifier', $url . '.rss')
+			);
+		}
+		return $rc;
 	}
 	
 	public function saveXML($node=null, $options=0) {
@@ -127,6 +159,7 @@ class rssDocument extends xmlDocument{
 	}
 	
 	public function save($filename, $options=null) {
+		if (!isset($filename) || empty($filename)) die('Error: No file name given');
 		if (!isset($this->channel)) die("rssDocument::saveXML():Channel not found");
 		$now = time();
 		$nowRss = date(DATE_RSS, $now);
@@ -151,87 +184,196 @@ class rssDocument extends xmlDocument{
 	    }
 	    return sprintf('ID%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
 	}
-
-	public function createItem($text=null, $meta=null, $tags=null, $id=null) {
-		$item = $this->createElement('item');
-		$itemId = isset($id)?$id:$this->GUID();
-		$item->setAttribute('xml:id', $itemId);
-		if (!isset($meta) || !array_key_exists('index', $meta)) {
-			$baseLink = $this->getChannelElement('link');
-		}
-		if (isset($baseLink) && !empty($baseLink->nodeValue)) {
-			$item->appendChild($this->createElement('link', $baseLink->nodeValue . '#' . $itemId));
-		}
-		if (isset($text)) {
-			if (isset($tags)) {
-				$item->appendChild($this->createElement('description', Markdown(strip_tags($text, $tags))));
-			} else {
-				$item->appendChild($this->createElement('description', Markdown(strip_tags($text, $this->allowable_tags))));
-			}
-		}
-		if (isset($meta)) {
-			foreach ($meta as $key => $val) {
-				//error_log('rssDocument::createItem meta[' . $key . '] = ' . $val . "\n", 3, $this->logFile);
+	
+	public function newArticle($text) {
+		//$this->documentElement->appendChild($this->createComment('new article'));
+		$urlStart = '/^https?:\/\//';
+		if (is_array($text)) {
+			foreach($text as $key => $val) {
 				switch ($key) {
-					case 'source':
+					case 'title':
+						$this->setTitle($val);
+						$this->setLink($val);
+						break;
+					case 'description':
+						$this->setElement('description', Markdown($val));
+						break;
+					case 'category':
 						if (is_array($val)) {
-							foreach ($val as $src) {
-								list($url, $txt) = explode(' ', $src, 2);
-								$e = $item->appendChild($this->createElement($key, $txt));
-								$e->setAttribute('url', $url);
+							foreach($val as $v) {
+								if(preg_match($urlStart, $v) > 0) {
+									list($url, $content) = explode(' ', $v, 2);
+									$this->channel->appendChild($this->createElement($key, $content))->setAttribute('domain', $url);
+								} else {
+									$this->channel->appendChild($this->createElement($key, $v));
+								}
 							}
 						} else {
-							list($url, $txt) = explode(' ', $val, 2);
-							$e = $item->appendChild($this->createElement($key, $txt));
-							$e->setAttribute('url', $url);
+							if (preg_match($urlStart, $val)) {
+								list($url, $content) = explode(' ', $val, 2);
+								$this->channel->appendChild($this->createElement($key, $content))->setAttribute('domain', $url);
+							} else {
+								$this->channel->appendChild($this->createElement($key, $val));
+							}
+						}
+						break;
+					case 'author':
+						if (preg_match($urlStart, $val)) {
+							list($url, $name) = explode(' ', $val, 2);
+							$author = $this->channel->appendChild($this->createElementNS(NAMESPACE_DC, 'dc:creator', $name));
+							$author->setAttributeNS(NAMESPACE_XLINK, 'xlink:type', 'simple');
+							$author->setAttributeNS(NAMESPACE_XLINK, 'xlink:href', $url);
+						} else {
+							$author = $this->channel->appendChild($this->createElementNS(NAMESPACE_DC, 'dc:creator', $val));
+						}
+						break;
+					default:
+						$this->setElement($key, $val);
+						break;
+				}
+			}
+		} else {
+			if (strlen($text) > 20) $this->setElement('description', $text);
+			else $this->setTitle($text);
+		}
+		$now = time();
+		$pd = $this->channel->appendChild($this->createElement('pubDate', date(DATE_RSS, $now)));
+		$pd->setAttributeNS(NAMESPACE_DC, 'dc:date', date(DATE_W3C, $now));
+		return this;
+	}
+	
+	/**
+	 * 
+	 * Creates an item from associative array
+	 * @param mixed $text
+	 * 	If $text is an associative array, all key/value pairs are processed,
+	 * 	where key is the element name, and value is the elements value.
+	 * 	If the element may contain a url, then the first word of the value is that url.
+	 * 	If the value itself is an array, then all of the array values are processed as elements
+	 * 	with key as name.
+	 * If $text is a string, then the resulting item contains that string as the value
+	 * 	of the title element (if string length < 20), or as value of the description eement. 
+	 */
+	public function createItem($text) {
+		$urlStart = '/^https?:\/\//';
+		$hasGuid = false;
+		$hasLink = false;
+		$item = $this->createElement('item');
+		$item->setAttribute('xml:id', $this->GUID());
+		if (is_array($text)) {
+			foreach($text as $key => $val) {
+				switch($key) {
+					case 'description':
+						$str = trim(Markdown(strip_tags($val, $this->allowable_tags)));
+						$item->appendChild($this->createElement($key, $str));
+						break;
+					case 'source':
+						if (is_array($val)) {
+							foreach($val as $v) {
+								list($url, $content) = explode(' ', $v, 2);
+								$item->appendChild($this->createElement($key, $content))->setAttribute('url', $url);
+							}
+						} else 	list($url, $content) = explode(' ', $val, 2);
+						break;
+					case 'category':
+						if (is_array($val)) {
+							foreach($val as $v) {
+								if(preg_match($urlStart, $v) > 0) {
+									list($url, $content) = explode(' ', $v, 2);
+									$item->appendChild($this->createElement($key, $content))->setAttribute('domain', $url);
+								} else {
+									$item->appendChild($this->createElement($key, $v));
+								}
+							}
+						} else {
+							if (preg_match($urlStart, $val)) {
+								list($url, $content) = explode(' ', $val, 2);
+								$item->appendChild($this->createElement($key, $content))->setAttribute('domain', $url);
+							} else {
+								$item->appendChild($this->createElement($key, $val));
+							}
 						}
 						break;
 					case 'guid':
-						$e = $item->appendChild($this->createElement($key, $val));
-						if (preg_match('/^https?:\/\//', $val)) {
-							$e->setAttribute('isPermaLink', 'true');
+						if (preg_match($urlStart, $val)) {
+							$item->appendChild($this->createElement($key, $val))->setAttribute('isPermaLink', 'true');
+						} else {
+							$item->appendChild($this->createElement($key, $val));
 						}
-					case 'author':
-						//list($url, $aname) = explode(' ', $val, 2);
-						//if (empty($aname)) {
-							$e = $item->appendChild($this->createElement($key, $val));
-						//} else {
-						//	$e = $item->appendChild($this->createElement($key, $aname));
-						//	$e->setAttributeNs('http://www.w3.org/1999/xlink', 'xlink:type', 'simple');
-						//	$e->setAttributeNs('http://www.w3.org/1999/xlink', 'xlink:href', $url);							
-						//}
-					case 'category':
-						// TODO
+						$hasGuid = true;
 						break;
-					default:
-						//print "adding $key -> $val\n";
-						$e = $item->appendChild($this->createElement($key, $val));
-						break;						
+					case 'pubDate':
+						break;
+					case 'link':
+						$item->appendChild($this->createElement($key, $val));
+						$hasLink = true;
+						break;
+						default:
+						$item->appendChild($this->createElement($key, $val));
+						break;
 				}
 			}
+		} else {
+			if (is_string($text)) {
+				if (strlen($text) > 20) {
+					$item->appendChild($this->createElement('description', $text));
+				} else {
+					$item->appendChild($this->createElement('title', $text));
+				}
+			} else return null;
 		}
 		$now = time();
 		$pd = $item->appendChild($this->createElement('pubDate', date(DATE_RSS, $now)));
 		$pd->setAttributeNS(NAMESPACE_DC, 'dc:date', date(DATE_W3C, $now));
+		$channel = $this->getElementsBytagName('channel')->item(0);
+		$c = $channel->firstChild;
+		while(isset($c) && $c->nodeName != 'link') $c = $c->nextSibling;
+		if (isset($c)) {
+			$file = $c->nodeValue;
+			if (!hasLink) 
+				$item->appendChild($this->createElement('link', $file . '#' . $item->getAttribute('xml:id')));
+			if (!$hasGuid) 
+				$item->appendChild($this->createElement('guid', $file . '#' . $item->getAttribute('xml:id')))->setAttribute('isPermaLink', 'true');
+		}
 		return $item;
 	}
 
-	public function appendItem($text=null, $meta=null, $tags=null, $id=null) {
+	
+	public function appendItem($item) {
 		if (!isset($this->channel)) die("rssDocument::appendElement():Channel not found");
-		return $this->channel->appendChild($this->createItem($text, $meta, $tags, $id));
+		return $this->channel->appendChild($item);
 	}
 	
-	public function insertItem($text=null, $meta=null, $tags=null, $id=null, $refIndex=null) {
+	public function insertItem($item) {
 		if (!isset($this->documentElement)) die('rssDocument::insertItem(): documentElement not found');
 		if (!isset($this->channel)) die("rssDocument::insertItem():Channel not found");
 		$ref=(isset($refIndex))?$refIndex:0;
 		$items = $this->getElementsByTagName('item');
-		if ($items->length <= $ref) return $this->appendItem($text, $meta, $tags, $id);
-		$item = $this->createItem($text, $meta, $tags, $id);
+		if ($items->length <= $ref) return $this->appendItem($item);
 		$refItem = $items->item($ref);
 		return $refItem->parentNode->insertBefore($item, $refItem);
 	}
 	
+	public function spamScore($text) {
+		return 0;
+	}
+	
+	public function isSpam($text) {
+		return $this->spamScore($text) > 5;
+	}
+	
+	public function addComment($data) {
+		if (!isset($data)) return;
+		if (is_array($data)) {
+			foreach($data as $d) {
+				if ($this->isSpam($d)) return;
+			}
+		} else {
+			if ($this->isSpam($data)) return;
+		}
+		return $this->appendItem($this->createItem($data));
+	}
+
 	public function crop($n) {
 		if (!isset($this->channel)) die("Error: no channel found");
 		$items = $this->getElementsByTagName('item');

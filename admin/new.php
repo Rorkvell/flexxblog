@@ -1,119 +1,95 @@
-<?php
+<?php 
 
-require_once('../rss2.class.php');
-//require_once('../markdown.php');
-include_once('users.php');
-require_once('../conf.php');
-
-define('DEBUG', false);
-
-
-function buildRSS($doc, $title, $text) {
-	if (!file_exists('template.rss')) die("Error: Template file not found");
-	$rc = $doc->load('template.rss', LIBXML_COMPACT | LIBXML_NOBLANKS);
-	if ($rc === false) die('Error: Could not load template.rss');
-	$title = strip_tags($title);
-	$doc->setElement('title', $title);
-	$guid = $doc->GUID();
-	$doc->channel->setAttribute('xml:id', $guid);
-	//$text = trim(Markdown($text));
-	$doc->setElement('description', $text);
-	if (function_exists('getUser')) {
-		$user = getUser($_SERVER['PHP_AUTH_USER']);
-		if (isset($user)) {
-			$creator = $doc->setElementNS('http://purl.org/dc/elements/1.0/', 'dc:creator', $user['name']);
-			$creator->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:type', 'simple');
-			$creator->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', $user['url']);
-		}	
-	}
-	return $doc;
-}
-
-function saveCommentRss($doc) {
-	if (DEBUG) print $doc->saveXML();
-	$id = $doc->setId();	// returns formalized title as file name
-	if (empty($id)) die("Error retrieving rss id");
-	if (DEBUG) print 'id = ' . $id . "\n";
-	$now = getdate();
-	$rssDst = '../' . $now['year'] . '/' . basename($id);
-	if (file_exists($rssDst)) {
-		$rssBase = $rssDst;
-		$i = 0;
-		$rssDst = $rssBase . '_' . $i;
-		while (file_exists($rssDst)) {
-			$i++;
-			$rssDst = $rssBase . '_' . $i;
-		}
-	}
-	$rc = $doc->save($rssDst);
-	if ($rc === false) die("Error: Could not write " . $rssDst . "\n");
-	$rc = chmod($rssDst, 0640);
-	if ($rc === false) die("Error on chmod" . $rssDst);
-	return $rssDst;
-}
-
-function saveCommentHtml($doc, $rssDst, $lang) {
-	$htmlDst = substr($rssDst, 0, -4) . '.html';
-	if (isset($lang) && !empty($lang)) $htmlDst .= '.' . $lang;
-	$rc = $doc->saveHTMLFile($htmlDst, 'BlogPosting');
-	if ($rc === false) die("Error: Could not write " . $htmlDst . "\n");
-	$rc = chmod($htmlDst, 0640);
-	if ($rc === false) die("Error on chmod" . $htmlDst);
-	return $htmlDst;
-}
-
-function updateMainFeed($baseFeed, $htmlId, $lang, $guid, $title, $text) {
-	if (!file_exists($baseFeed)) die("Error: " . $baseFeed . " not found");
-	$feed = new rssDocument();
-	if (!isset($feed)) die("Error on creating rssDocument");
-	$rc = $feed->load($baseFeed, LIBXML_COMPACT | LIBXML_NOBLANKS);
-	if ($rc === false) die('Error: could not load base feed');
-	$meta = Array(
-		'title' => $title,
-		'description' => $text,	// TODO
-		'guid' => $htmlId
-	);
-	$feed->insertItem(null, $meta, null, $guid);
-	$feed->crop(20);
-	$feed->save($baseFeed);	// save rss
-	$fname = substr($baseFeed, 0, -4) . '.html';
-	if (isset($lang) && !empty($lang)) $fname .= '.' . $lang;
-	$feed->saveHTMLFile($fname);
-}
+require_once '../rss2.class.php';
+require_once '../conf.php';
+include_once './users.php';
 
 if (isset($_POST['title']) && isset($_POST['text'])) {
 	umask(0027);
-	$text = trim(Markdown($_POST['text']));
 	
-	// Build the rss article
-	$doc = new rssDocument();
-	if (!isset($doc)) die("Error on creating rssDocument");
-	buildRSS($doc, $_POST['title'], $text);
-	$rssDst = saveCommentRss($doc);	
-	if (!file_exists($rssDst)) die('Error: ' . $rssDst . ' does not exist' . "\n");
-	//header('Content-type: application/xml');
-	//print $doc->saveXML();
+	// DEBUG
+	header('Content-Type: text/plain');
 	
-	// convert and save rss to html
-	$htmlDst = saveCommentHtml($doc, $rssDst, $lang);
-	if (!file_exists($htmlDst)) die('Error: ' . $htmlDst . ' does not exist' . "\n");
-	//print file_get_contents($htmlDst);
-	$link = $doc->getChannelElement('link');
-	if (!isset($link)) die("Link not found");
-
-	$channel = $doc->getChannel();
-	if (!isset($channel)) die("Error: Channel not found");
-	$guid = $channel->getAttribute('xml:id');
-	updateMainFeed($baseFeed, $link->nodeValue, $lang, $guid, $_POST['title'], $text);	
+	// 1. Create new rss file
+	$rssDoc = new rssDocument();
+	$rssDoc->preserveWhiteSpace = false;
+	$rssDoc->formatOutput = true;
+	$rc = $rssDoc->load('template2.rss');
+	if ($rc === false) die('Error on loading rss template');
 	
-	header('Location: ' . $link->nodeValue);	
+	// 2. Read the main (overview) feed name from template
+	$link = $rssDoc->getElement('link');
+	if (isset($link)) {
+		$mainFeedName = basename($link->nodeValue);
+	}
+	else $mainFeedName = null;
 	
+	// 3. Set the article
+	$articleData = array(
+		'title' => $_POST['title'],
+		'description' => $_POST['text']
+	);
+	if (isset($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_USER'])) {
+		if (function_exists('getUser')) {
+			$user = getUser($_SERVER['PHP_AUTH_USER']);
+			$articleData['author'] = $user['url'] . ' ' . $user['name'];
+		} else 	$data['author'] = $_SERVER['PHP_AUTH_USER'];
+	}
+	$rssDoc->newArticle($articleData);
+	//print $rssDoc->saveXML();
+	
+	// 4. Save rss file
+	$identifier = $rssDoc->getElement('dc:identifier');
+	if (!isset($identifier)) die('Error locating rss identifier');
+	$fname = basename(dirname($identifier->nodeValue)) . '/' . basename($identifier->nodeValue);
+	//$rssDoc->save('../' . $fname);
+	//print '../' . $fname . "\n";
+	
+	// 5. Save Article HTML file
+	$identifier = $rssDoc->getElement('link');
+	if (!isset($identifier)) die('Error locating html identifier');
+	$articleData['link'] = $identifier->nodeValue;
+	$articleData['guid'] = $identifier->nodeValue;
+	$fname = basename(dirname($identifier->nodeValue)) . '/' . basename($identifier->nodeValue);
+	//print '../' . $fname . "\n";
+	$params = array(
+		'TYPE' => 'BlogPosting',
+		'CFORM' => 'true'
+	);
+	//print $rssDoc->saveHTML(null, 'BlogPosting');
+	//$rssDoc->saveHTMLFile('../' . $fname);
+		
+	if (isset($mainFeedName)) {
+		// 6. Update overview feed
+		//print $mainFeedName . "\n";
+		$baseFeedName = substr($mainFeedName, 0, strpos($mainFeedName, '.'));
+		$feed = new rssDocument();
+		$feedName = '../' . $baseFeedName . '.rss';
+		print "\n" . $feedName . "\n";
+		$feed->load($feedName, LIBXML_NOBLANKS | LIBXML_NONET);
+		$feed->insertItem($feed->createItem($articleData));
+		print $feed->saveXML();
+		//$feed->save($feedName, LIBXML_NOBLANKS);
+		
+		// 7. Convert overview feed to html
+		$htmlName = '../' . $mainFeedName . '.html';
+		$params = array(
+			'TYPE' => 'Blog',
+			'CFORM' => 'false'
+		);
+		print "\n" . $htmlName . "\n";
+		print $feed->saveHTML(null, $params);
+	}
 	
 } else {
 	// Build form
 	$doc = new rssDocument();
 	$doc->load('template.rss');
-	$htmlDoc = $doc->convertToHTMLDoc();
+	$params = array(
+		'TYPE' => 'BlogPosting',
+		'CFORM' => 'false'
+	);
+	$htmlDoc = $doc->convertToHTMLDoc($params);
 	$divs = $htmlDoc->getElementsByTagName('div');
 	$mainDiv = null;
 	for ($i=0; $i<$divs->length; $i++) {
@@ -129,7 +105,7 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 	if (!isset($mainDiv)) die("error getting main div\n") ;
 	// Append form
 	$form = $mainDiv->appendChild($htmlDoc->createElement('form'));
-	$form->setAttribute('action', 'new.php');
+	$form->setAttribute('action', 'n2.php');
 	$form->setAttribute('method', 'post');
 	$legend = $form->appendChild($htmlDoc->createElement('legend', 'neuer Artikel'));
 	$fset = $form->appendChild($htmlDoc->createElement('fieldset'));
@@ -140,12 +116,12 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 		$label->setAttribute('for', $key);
 		if ($key == 'text') {
 			$input = $fitem->appendChild($htmlDoc->createElement('textarea'));
-			$input->setAttribute('cols', '80');
-			$input->setAttribute('rows', '24');
+			$input->setAttribute('cols', '60');
+			$input->setAttribute('rows', '14');
 		} else {
 			$input = $fitem->appendChild($htmlDoc->createElement('input'));
 			$input->setAttribute('type', 'text');
-			$input->setAttribute('size', '80');
+			$input->setAttribute('size', '60');
 		}
 		$input->setAttribute('name', $key);
 		$input->setAttribute('style', 'width: 80%;');
@@ -157,6 +133,4 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 	$htmlDoc->normalize();
 	print $htmlDoc->saveHTML();	
 }
-
-
 ?>
