@@ -8,7 +8,7 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 	umask(0027);
 	
 	// DEBUG
-	header('Content-Type: text/plain');
+	if (DEBUG) header('Content-Type: text/plain');
 	
 	// 1. Create new rss file
 	$rssDoc = new rssDocument();
@@ -36,14 +36,14 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 		} else 	$data['author'] = $_SERVER['PHP_AUTH_USER'];
 	}
 	$rssDoc->newArticle($articleData);
-	//print $rssDoc->saveXML();
+	if (DEBUG) print $rssDoc->saveXML();
 	
 	// 4. Save rss file
 	$identifier = $rssDoc->getElement('dc:identifier');
 	if (!isset($identifier)) die('Error locating rss identifier');
 	$fname = basename(dirname($identifier->nodeValue)) . '/' . basename($identifier->nodeValue);
-	//$rssDoc->save('../' . $fname);
-	//print '../' . $fname . "\n";
+	if (DEBUG) print '../' . $fname . "\n";
+	else $rssDoc->save('../' . $fname);
 	
 	// 5. Save Article HTML file
 	$identifier = $rssDoc->getElement('link');
@@ -51,34 +51,39 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 	$articleData['link'] = $identifier->nodeValue;
 	$articleData['guid'] = $identifier->nodeValue;
 	$fname = basename(dirname($identifier->nodeValue)) . '/' . basename($identifier->nodeValue);
-	//print '../' . $fname . "\n";
+	if (DEBUG) print '../' . $fname . "\n";
 	$params = array(
 		'TYPE' => 'BlogPosting',
 		'CFORM' => 'true'
 	);
-	//print $rssDoc->saveHTML(null, 'BlogPosting');
-	//$rssDoc->saveHTMLFile('../' . $fname);
+	if (DEBUG) print $rssDoc->saveHTML(null, 'BlogPosting');
+	else $rssDoc->saveHTMLFile('../' . $fname);
 		
 	if (isset($mainFeedName)) {
 		// 6. Update overview feed
-		//print $mainFeedName . "\n";
+		if (DEBUG) print $mainFeedName . "\n";
 		$baseFeedName = substr($mainFeedName, 0, strpos($mainFeedName, '.'));
 		$feed = new rssDocument();
 		$feedName = '../' . $baseFeedName . '.rss';
-		print "\n" . $feedName . "\n";
+		if (DEBUG) print "\n" . $feedName . "\n";
 		$feed->load($feedName, LIBXML_NOBLANKS | LIBXML_NONET);
 		$feed->insertItem($feed->createItem($articleData));
-		print $feed->saveXML();
-		//$feed->save($feedName, LIBXML_NOBLANKS);
+		if (DEBUG) print $feed->saveXML();
+		else $feed->save($feedName, LIBXML_NOBLANKS);
 		
 		// 7. Convert overview feed to html
-		$htmlName = '../' . $mainFeedName . '.html';
+		$htmlName = '../' . $mainFeedName . '.html.de';
 		$params = array(
 			'TYPE' => 'Blog',
 			'CFORM' => 'false'
 		);
-		print "\n" . $htmlName . "\n";
-		print $feed->saveHTML(null, $params);
+		if (DEBUG) {
+			print "\n" . $htmlName . "\n";
+			print $feed->saveHTML(null, $params);
+		} else {
+			$feed->saveHTMLFile($htmlName, $params);
+			header('Location: ' . $link->nodeValue);
+		}
 	}
 	
 } else {
@@ -105,7 +110,7 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 	if (!isset($mainDiv)) die("error getting main div\n") ;
 	// Append form
 	$form = $mainDiv->appendChild($htmlDoc->createElement('form'));
-	$form->setAttribute('action', 'n2.php');
+	$form->setAttribute('action', 'new.php');
 	$form->setAttribute('method', 'post');
 	$legend = $form->appendChild($htmlDoc->createElement('legend', 'neuer Artikel'));
 	$fset = $form->appendChild($htmlDoc->createElement('fieldset'));

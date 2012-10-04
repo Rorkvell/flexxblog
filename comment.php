@@ -4,16 +4,17 @@ require_once('rss2.old.php');	// Old comment version!
 require_once('evlog.php');
 include_once('conf.php');
 
+event_log(__FILE__, 'Comment request for ' . $_SERVER['HTTP_REFERER']);
 
 //header('Content-type: text/plain');
 $errMsg = 'error on input';
+if (!isset($_POST['name']) && !isset($_POST['text'])) {
+	die($errMsg);
+}
 if (isset($_POST['name'])) $name = trim($_POST['name']);
-else die($errMsg);
+else $name = null;
 if (isset($_POST['text'])) $text=trim($_POST['text']);
-else die($errMsg);
-
-if (strlen($name) < 2) die('Name length error');
-if (strlen($text) < 3) die('Text length error');
+else $text = null;
 
 if (isset($_POST['rss'])) $rssFile = $_POST['rss'];
 else die($errMsg);
@@ -44,7 +45,6 @@ $meta = Array();
 if (isset($_POST['name'])) $meta['author'] = trim($_POST['name']);
 else $meta['autor'] = 'anonymous';
 if (isset($_POST['source']) && !empty($_POST['source'])) {
-//	$meta['author'] = $_POST['source'] . ' ' . $meta['author'];
 	$meta['source'] = trim($_POST['source']);
 }
 $item = $rssDoc->appendItem($_POST['text'], $meta, null, null, null);
