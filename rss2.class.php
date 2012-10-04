@@ -360,6 +360,7 @@ class rssDocument extends xmlDocument{
 		$now = time();
 		$pd = $this->channel->appendChild($this->createElement('pubDate', date(DATE_RSS, $now)));
 		$pd->setAttributeNS(NAMESPACE_DC, 'dc:date', date(DATE_W3C, $now));
+		$this->channel->setAttribute('xml:id', $this->GUID());
 		return this;
 	}
 	
@@ -380,11 +381,15 @@ class rssDocument extends xmlDocument{
 		$urlStart = '/^https?:\/\//';
 		$hasGuid = false;
 		$hasLink = false;
+		$hasId = false;
 		$item = $this->createElement('item');
-		$item->setAttribute('xml:id', $this->GUID());
 		if (is_array($text)) {
 			foreach($text as $key => $val) {
 				switch($key) {
+					case 'id':
+						$item->setAttribute('xml:id', $val);
+						$hasId = true;
+						break;
 					case 'description':
 						$str = trim(Markdown(strip_tags($val, $this->allowable_tags)));
 						$item->appendChild($this->createElement($key, $str));
@@ -456,6 +461,8 @@ class rssDocument extends xmlDocument{
 				$item->appendChild($this->createElement('link', $file . '#' . $item->getAttribute('xml:id')));
 			if (!$hasGuid) 
 				$item->appendChild($this->createElement('guid', $file . '#' . $item->getAttribute('xml:id')))->setAttribute('isPermaLink', 'true');
+			if (!$hasId)
+				$item->setAttribute('xml:id', $this->GUID());	
 		}
 		return $item;
 	}

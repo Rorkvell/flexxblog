@@ -36,7 +36,11 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 		} else 	$data['author'] = $_SERVER['PHP_AUTH_USER'];
 	}
 	$rssDoc->newArticle($articleData);
-	if (DEBUG) print $rssDoc->saveXML();
+	$articleData['id'] = $rssDoc->channel->getAttribute('xml:id');
+	if (DEBUG) {
+		print 'ID = ' . $articleData['id'] . "\n";
+		print $rssDoc->saveXML();
+	}
 	
 	// 4. Save rss file
 	$identifier = $rssDoc->getElement('dc:identifier');
@@ -57,7 +61,7 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 		'CFORM' => 'true'
 	);
 	if (DEBUG) print $rssDoc->saveHTML(null, 'BlogPosting');
-	else $rssDoc->saveHTMLFile('../' . $fname);
+	else $rssDoc->saveHTMLFile('../' . $fname, $params);
 		
 	if (isset($mainFeedName)) {
 		// 6. Update overview feed
@@ -72,7 +76,7 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 		else $feed->save($feedName, LIBXML_NOBLANKS);
 		
 		// 7. Convert overview feed to html
-		$htmlName = '../' . $mainFeedName . '.html.de';
+		$htmlName = '../' . basename($link->nodeValue);
 		$params = array(
 			'TYPE' => 'Blog',
 			'CFORM' => 'false'
@@ -82,7 +86,8 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 			print $feed->saveHTML(null, $params);
 		} else {
 			$feed->saveHTMLFile($htmlName, $params);
-			header('Location: ' . $link->nodeValue);
+			header('Location: ' . $identifier->nodeValue);
+			//header('Location: ' . $link->nodeValue); 	// if redirect to overview feed
 		}
 	}
 	
