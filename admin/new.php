@@ -14,7 +14,7 @@ if (isset($_POST['title']) && isset($_POST['text'])) {
 	$rssDoc = new rssDocument();
 	$rssDoc->preserveWhiteSpace = false;
 	$rssDoc->formatOutput = true;
-	$rc = $rssDoc->load('template2.rss');
+	$rc = $rssDoc->load('template.rss');
 	if ($rc === false) die('Error on loading rss template');
 	
 	// 2. Read the main (overview) feed name from template

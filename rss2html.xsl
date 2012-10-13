@@ -626,9 +626,19 @@
 -->
 
 <xsl:template name="COMMENTFORM">
+	<xsl:param name="TITLE">
+		<xsl:value-of select="/rss/channel/title"/>
+	</xsl:param>
 	<xsl:element name="form">
 		<xsl:attribute name="action">
-			<xsl:text>../comment.php</xsl:text>
+			<xsl:choose>
+				<xsl:when test="starts-with($TITLE, 'Test')">
+					<xsl:text>../comment_test.php</xsl:text>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:text>../comment.php</xsl:text>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:attribute>
 		<xsl:attribute name="method">
 			<xsl:text>post</xsl:text>

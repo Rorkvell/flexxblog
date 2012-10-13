@@ -435,9 +435,20 @@ class rssDocument extends xmlDocument{
 						$item->appendChild($this->createElement($key, $val));
 						$hasLink = true;
 						break;
-						default:
+					case 'author':
+						if (preg_match($urlStart, $val)) {
+							list($url, $v) = explode(' ', $val, 2);
+							$a = $item->appendChild($this->createElement($key, $v));
+							$a->setAttributeNS(NAMESPACE_XLINK, 'xlink:type', 'simple');
+							$a->setAttributeNS(NAMESPACE_XLINK, 'xlink:href', $url);
+						} else {
+							$item->appendChild($this->createElement($key, $val));
+						}
+						break;
+					default:
 						$item->appendChild($this->createElement($key, $val));
 						break;
+						
 				}
 			}
 		} else {
@@ -457,12 +468,12 @@ class rssDocument extends xmlDocument{
 		while(isset($c) && $c->nodeName != 'link') $c = $c->nextSibling;
 		if (isset($c)) {
 			$file = $c->nodeValue;
-			if (!hasLink) 
+			if (!$hasId)
+				$item->setAttribute('xml:id', $this->GUID());	
+			if (!$hasLink) 
 				$item->appendChild($this->createElement('link', $file . '#' . $item->getAttribute('xml:id')));
 			if (!$hasGuid) 
 				$item->appendChild($this->createElement('guid', $file . '#' . $item->getAttribute('xml:id')))->setAttribute('isPermaLink', 'true');
-			if (!$hasId)
-				$item->setAttribute('xml:id', $this->GUID());	
 		}
 		return $item;
 	}
@@ -487,6 +498,7 @@ class rssDocument extends xmlDocument{
 	 */
 	public function insertItem($item, $refIndex = 0) {
 		if (!isset($this->documentElement)) die('rssDocument::insertItem(): documentElement not found');
+		if (!isset($this->channel)) $this->channel = $this->getChannel();
 		if (!isset($this->channel)) die("rssDocument::insertItem():Channel not found");
 		$ref=(isset($refIndex))?$refIndex:0;
 		$items = $this->getElementsByTagName('item');
@@ -545,7 +557,7 @@ class rssDocument extends xmlDocument{
 	 * @return DOMNode item or null if not added.
 	 */
 	public function addComment($data) {
-		if (!isset($data)) return;
+		if (!isset($data)) return null;
 		if (is_array($data)) {
 			foreach($data as $d) {
 				if ($this->isSpam($d)) return null;
